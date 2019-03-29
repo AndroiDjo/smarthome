@@ -1,0 +1,928 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+ <meta charset="UTF-8">
+ <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1.0">
+ <title>Example page</title>
+ <link rel="stylesheet" href="../static/iot.min.css" />
+ <style type="text/css">
+  .g {
+   background-color: darkgray;
+   border-radius: 0.5em;
+   margin-top: 0.5em;
+   margin-bottom: 0.5em;
+  }
+
+  .grey {
+   background-color: #ecebeb !important;
+  }
+
+  pre {
+   margin-top: 2em;
+   margin-bottom: 2em;
+  }
+
+ </style>
+ <script src="https://ajax.googleapis.com/ajax/libs/jquery/3.3.1/jquery.min.js"></script>
+</head>
+
+<body>
+ <div id="loader" class="loader hide"></div>
+ <div id="sideNav" class="sidenav">
+  <span href="javascript:void(0)" class="close" onclick="document.getElementById('sideNav').classList.toggle('open');">&times;</span>
+  <div class="in"></div>
+  <a href="#grid">Grid</a>
+  <a href="#nav">Navigation</a>
+  <a href="#form">Forms and button</a>
+  <a href="#alert">Alert</a>
+  <a href="#list">List</a>
+  <a href="#modal">Modal box</a>
+  <a href="#progbar">Progress Bar</a>
+  <a href="#range">Range</a>
+  <a href="#tab">Tables</a>
+ </div>
+ <div class="sideopen warning"><a onclick="document.getElementById('sideNav').classList.toggle('open');">&equiv;</a></div>
+ <ul class="nav fix warning" id="topNav">
+  <li><a href="/" class="brand">WEB-SERVER</a></li>
+  <li><a href="#grid">Grid</a></li>
+  <li><a href="#nav">Navigation</a></li>
+  <li><a href="#form">Forms and button</a></li>
+  <li><a href="#alert">Alert</a></li>
+  <li><a href="#listgroup">List</a></li>
+  <li><a href="#modal">Modal box</a></li>
+  <li><a href="#progbar">Progress Bar</a></li>
+  <li><a href="#range">Range</a></li>
+  <li><a href="#tab">Tables</a></li>
+  <li class="-exit"><a href="#" id="btn_exit" onclick="logout()">Exit</a></li>
+  <li class="-icon"><a href="#" onclick="document.getElementById('topNav').classList.toggle('res');">&equiv;</a></li>
+ </ul>
+ <div id="Modal" class="modal hide">
+  <div class="m-cont">
+   <span class="close" id="close_m">&times;</span>
+   <div class="m-body">
+    <p>Save settings?</p>
+   </div>
+   <div class="m-foo">
+    <button class="success">Yes</button>
+    <button class="danger">No</button>
+   </div>
+  </div>
+ </div>
+
+ <div class="cont">
+  <div class="row">
+   <div class="s12 m2 l2">
+   </div>
+   <div class="s12 m10 l9">
+    <a name="grid"><br/><br/></a>
+    <h1>Grid</h1>
+    <div class="row">
+     <div class="s12">
+      Разметка включает в себя адаптивную систему разметки, которая масштабируется до 12 столбцов. <br>
+      <b>.row</b> должны быть помещены в <b>.cont</b> (full-width) для правильного выравнивания и заполнения <br>
+     </div>
+    </div>
+    <div class="row">
+     <div class="s12">
+      <table>
+       <thead>
+        <tr>
+         <th></th>
+         <th>Phone ( &lt;768px)</th>
+         <th>Tablet (≥768px)</th>
+         <th>Desktop (≥1200px)</th>
+        </tr>
+       </thead>
+       <tbody>
+        <tr>
+         <td>class</td>
+         <td>.s</td>
+         <td>.m</td>
+         <td>.l</td>
+        </tr>
+        <tr>
+         <td>row</td>
+         <td>12</td>
+         <td>12</td>
+         <td>12</td>
+        </tr>
+       </tbody>
+      </table>
+     </div>
+    </div>
+    <div class="row">
+     <div class="s10 of-s2 g">s10 of-s2</div>
+    </div>
+    <div class="row">
+     <div class="s3 g">.s3</div>
+     <div class="s3 g">.s3</div>
+     <div class="s3 g">.s3</div>
+     <div class="s3 g">.s3</div>
+    </div>
+
+    <div class="row">
+     <div class="s12">
+      <pre class="grey">
+  &lt;div class="row"&gt;
+    &lt;div class="s10 of-s2"&gt;.s10 .of-s2&lt;/div&gt;
+  &lt;/div&gt;
+  &lt;div class="row"&gt;
+    &lt;div class="s3"&gt;.s3&lt;/div&gt;
+    &lt;div class="s3"&gt;.s3&lt;/div&gt;
+    &lt;div class="s3"&gt;.s3&lt;/div&gt;
+    &lt;div class="s3"&gt;.s3&lt;/div&gt;
+  &lt;/div&gt;
+            </pre>
+     </div>
+    </div>
+    <div class="row">
+     <div class="s1 g">.s1</div>
+     <div class="s11 g">.s11</div>
+    </div>
+    <div class="row">
+     <div class="s2 g">.s2</div>
+     <div class="s10 g">.s10</div>
+    </div>
+    <div class="row">
+     <div class="s3 g">.s3</div>
+     <div class="s9 g">.s9</div>
+    </div>
+    <div class="row">
+     <div class="s4 g">.s4</div>
+     <div class="s4 m of-s4">.s4 .of-s4</div>
+    </div>
+    <div class="row">
+     <div class="s5 of-s3 g">.s5 .of-s3</div>
+     <div class="s4 g">.s4</div>
+    </div>
+    <div class="row">
+     <div class="s6 g">.s6</div>
+    </div>
+    <div class="row">
+     <div class="s7 g">.s7</div>
+    </div>
+    <div class="row">
+     <div class="s8 g">.s8</div>
+    </div>
+    <div class="row">
+     <div class="s9 g">.s9</div>
+    </div>
+    <div class="row">
+     <div class="s10 g">.s10</div>
+    </div>
+    <div class="row">
+     <div class="s11 g">.s11</div>
+    </div>
+    <div class="row">
+     <div class="s12 g">.s12</div>
+    </div>
+
+
+    <div class="row">
+     <div class="s12">
+      <pre class="grey">
+
+  &lt;div class="row"&gt;
+    &lt;div class="s1"&gt;.s1&lt;/div&gt;
+    &lt;div class="s11"&gt;.s11&lt;/div&gt;
+  &lt;/div&gt;
+  &lt;div class="row"&gt;
+    &lt;div class="s2"&gt;.s2&lt;/div&gt;
+    &lt;div class="s10"&gt;.s10&lt;/div&gt;
+  &lt;/div&gt;
+  &lt;div class="row"&gt;
+    &lt;div class="s3"&gt;.s3&lt;/div&gt;
+    &lt;div class="s9"&gt;.s9&lt;/div&gt;
+  &lt;/div&gt;
+  &lt;div class="row"&gt;
+    &lt;div class="s4"&gt;.s4&lt;/div&gt;
+    &lt;div class="s4 of-s4"&gt;.s4 .of-s4&lt;/div&gt;
+  &lt;/div&gt;
+  &lt;div class="row"&gt;
+    &lt;div class="s5 of-s3"&gt;.s5 .of-s3&lt;/div&gt;
+    &lt;div class="s4"&gt;.s4&lt;/div&gt;
+  &lt;/div&gt;
+  &lt;div class="row"&gt;
+    &lt;div class="s6"&gt;.s6&lt;/div&gt;
+  &lt;/div&gt;
+  &lt;div class="row"&gt;
+    &lt;div class="s7"&gt;.s7&lt;/div&gt;
+  &lt;/div&gt;
+  &lt;div class="row"&gt;
+    &lt;div class="s8"&gt;.s8&lt;/div&gt;
+  &lt;/div&gt;
+  &lt;div class="row"&gt;
+    &lt;div class="s9"&gt;.s9&lt;/div&gt;
+  &lt;/div&gt;
+  &lt;div class="row"&gt;
+    &lt;div class="s10"&gt;.s10&lt;/div&gt;
+  &lt;/div&gt;
+  &lt;div class="row"&gt;
+    &lt;div class="s11"&gt;.s11&lt;/div&gt;
+  &lt;/div&gt;
+  &lt;div class="row"&gt;
+    &lt;div class="s12"&gt;.s12&lt;/div&gt;
+  &lt;/div&gt;
+            </pre>
+     </div>
+    </div>
+
+
+    <h2>Phone (.s), Tablet (.m), Decktop (.l) </h2>
+
+    <div class="row">
+     <div class="s10 of-s2 m8 of-m0 l6 of-l4 g">.s10 .of-s2 .m8 .of-m0 .l6 .of-l4</div>
+    </div>
+    <div class="row">
+     <div class="s12 m6 l3 g">.s12 .m6 .l3</div>
+     <div class="s12 m6 l3 g">.s12 .m6 .l3</div>
+     <div class="s12 m6 l3 g">.s12 .m6 .l3</div>
+     <div class="s12 m6 l3 g">.s12 .m6 .l3</div>
+    </div>
+
+    <pre class="grey">
+  &lt;div class="row"&gt;
+    &lt;div class="s10 of-s2"&gt;.s10 .of-s2&lt;/div&gt;
+  &lt;/div&gt;
+  &lt;div class="row"&gt;
+    &lt;div class="s12 m6 l3"&gt;.s12 .m6 .l3&lt;/div&gt;
+    &lt;div class="s12 m6 l3"&gt;.s12 .m6 .l3&lt;/div&gt;
+    &lt;div class="s12 m6 l3"&gt;.s12 .m6 .l3&lt;/div&gt;
+    &lt;div class="s12 m6 l3"&gt;.s12 .m6 .l3&lt;/div&gt;
+  &lt;/div&gt;
+            </pre>
+
+
+    <h2>Вложенные столбцы</h2>
+
+    <div class="row">
+     <div class="s12 m grey" style="padding: 1em">
+      Level 1: .s12
+      <div class="row">
+       <div class="s6 g">Level 2: .s6</div>
+       <div class="s6 g">Level 2: .s6</div>
+      </div>
+     </div>
+    </div>
+
+    <pre class="grey">
+  &lt;div class="row"&gt;
+   &lt;div class="s12"&gt;
+    &lt;div class="row"&gt;
+     &lt;div class="s6"&gt;&lt;/div&gt;
+     &lt;div class="s6"&gt;&lt;/div&gt;
+    &lt;/div&gt;
+   &lt;/div&gt;
+  &lt;/div&gt;
+</pre>
+    <a name="nav"><br/><br/></a>
+    <h1>Navigation</h1>
+    <div class="row">
+     <div class="s12">
+      <ul class="nav" id="my_nav">
+       <li><a href="#" class="brand">NodeMCU</a></li>
+       <li><a href="#">Settings</a></li>
+       <li><a href="#">Info</a></li>
+       <li class="-icon">
+        <a href="javascript:void(0);" onclick="document.getElementById('my_nav').classList.toggle('res');">&equiv;</a>
+       </li>
+      </ul>
+     </div>
+    </div>
+
+    <div class="row">
+     <div class="s12">
+      <pre class="grey"> 
+      
+  &lt;ul class="nav warning" id="my_nav"&gt;
+    &lt;li&gt;&lt;a href="#" class="brand"&gt;NodeMCU&lt;/a&gt;&lt;/li&gt;
+    &lt;li&gt;&lt;a href="#"&gt;Settings&lt;/a&gt;&lt;/li&gt;
+    &lt;li&gt;&lt;a href="#"&gt;Info&lt;/a&gt;&lt;/li&gt;
+    &lt;li style="float:right;"&gt;&lt;a href="#"&gt;Right&lt;/a&gt;&lt;/li&gt;
+    &lt;li class="-icon"&gt;&lt;a href="#" 
+    onclick="document.getElementById('my_nav').classList.toggle('res');"&gt;&equiv;&lt;/a&gt;
+    &lt;/li&gt;
+  &lt;/ul&gt;
+
+  &lt;!--
+   Navbar fix
+   &lt;ul class="nav fix" id="my_nav"&gt;
+    ...
+   &lt;/ul&gt;
+  --&gt;
+</pre>
+     </div>
+    </div>
+
+   <h1>Sidebar</h1>
+   
+    <div class="row">
+     <div class="s12">
+      <pre class="grey">      
+  &lt;div id="sideNav" class="sidenav"&gt;
+    &lt;span href="javascript:void(0)" class="close" 
+    onclick="document.getElementById('sideNav').classList.toggle('open');"&gt;&times;&lt;/span&gt;
+    &lt;div class="in"&gt;&lt;/div&gt;
+    &lt;a href="#grid"&gt;Grid&lt;/a&gt;
+    &lt;a href="#nav"&gt;Navigation&lt;/a&gt;
+  &lt;/div&gt;
+  &lt;div class="sideopen warning"&gt;
+      &lt;a onclick="document.getElementById('sideNav').classList.toggle('open');"&gt;&equiv;&lt;/a&gt;
+  &lt;/div&gt;
+       </pre>
+     </div>
+    </div>
+
+    <a name="form"><br><br></a>
+    <h1>Forms and buttons</h1>
+    <br>
+    <div class="row">
+     <div class="s12">
+      <div class="group">
+       <div class="search">
+        <input id="wifi_id" value="Web server" required="" type="text" name="wifi_id">
+        <label for="wifi_id">Имя (SSID):</label>
+        <input id="search" type="submit" value="search" onclick="search()">
+        <ul id="list" class="hide">
+         <li>1 list</li>
+         <li>2 list</li>
+         <li>3 list</li>
+        </ul>
+       </div>
+      </div>
+     </div>
+    </div>
+    <script>
+     function search() {
+      if (document.getElementById('list').classList.contains("hide")) {
+       document.getElementById('search').value = 'close';
+      } else {
+       document.getElementById('search').value = 'search';
+      }
+      document.getElementById('list').classList.toggle("hide");
+     }
+
+    </script>
+    <pre class="grey">
+  &lt;div class="group"&gt;
+    &lt;div class="search"&gt;
+      &lt;input id="wifi_id" value="Web server" required="" type="text" name="wifi_id"&gt;
+      &lt;label for="wifi_id"&gt;Имя (SSID):&lt;/label&gt;
+      &lt;input id="search" type="submit" value="search" onclick="search()"&gt;
+      &lt;ul id="list" class="hide"&gt;
+        &lt;li&gt;1 list&lt;/li&gt;
+        &lt;li&gt;2 list&lt;/li&gt;
+        &lt;li&gt;3 list&lt;/li&gt;
+      &lt;/ul&gt;
+    &lt;/div&gt;
+  &lt;/div&gt;
+  &lt;script&gt;
+   function search() {
+     if (document.getElementById('list').classList.t("hide")) {
+       document.getElementById('search').value = 'close';
+     } else {
+       document.getElementById('search').value = 'search';
+     }
+     document.getElementById('list').classList.toggle("hide");
+   }
+  &lt;/script&gt;
+</pre>
+    <br>
+    <div class="row">
+     <div class="s12 m4">
+      <div class="group purple">
+       <input checked type="radio" name="flash" value="on" onchange="test2(this.name,this.value)" id="on">
+       <label for="on">ON</label>
+       <input type="radio" name="flash" value="off" onchange="test2(this.name,this.value)" id="off">
+       <label for="off">OFF</label><span>label text :</span>
+      </div>
+     </div>
+     <div class="s12 m4">
+      <div class="group three success">
+       <input checked type="radio" name="switch" value="1" onchange="test(this.name,this.value)" id="s_1">
+       <label for="s_1">1</label>
+       <input type="radio" name="switch" value="2" onchange="test(this.name,this.value)" id="s_2">
+       <label for="s_2">2</label>
+       <input type="radio" name="switch" value="3" onchange="test(this.name,this.value)" id="s_3">
+       <label for="s_3">3</label>
+       <span>label text :</span>
+      </div>
+     </div>
+     <div class="s12 m4 group">
+      <select id="wifi_mode" onchange="check_s()" name="wifi_mode">
+							<option value="off">OFF</option>
+							<option selected value="ST">Wireless client</option>
+							<option value="AP">Access point</option></select>
+      <span>label text :</span>
+     </div>
+     <div class="s12 m4 group">
+      <input checked type="checkbox" class="checkbox" id="checkbox1" onchange="checkbox(this)" />
+      <label for="checkbox1">checkbox</label>
+     </div>
+     <div class="s12 m4">
+      <div class="group center">
+       <input type="checkbox" class="checkbox" id="checkbox2" onchange="checkbox(this)" />
+       <label for="checkbox2">checkbox</label>
+      </div>
+     </div>
+    </div>
+    <script>
+     function check_rad(val) {
+      var inp = document.getElementsByName(val);
+      for (var i = 0; i < inp.length; i++) {
+       if (inp[i].type == "radio" && inp[i].checked) {
+        return inp[i].value;
+       }
+      }
+     }
+     
+     function test2(name, val) {
+	     $.getJSON('/background_process_test', {
+	         a: val
+	     });
+     }
+
+     function test(name, val) {
+      alert(name + " " + val)
+     }
+
+     function check_s() {
+      alert(document.getElementById("wifi_mode").value);
+     }
+
+     function checkbox(obj) {
+      alert(obj.checked ? "on" : "off");
+     }
+
+    </script>
+
+
+    <pre class="grey">
+
+  &lt;div class="group purple"&gt;
+    &lt;input checked type="radio" name="flash" value="on" id="on"&gt;
+    &lt;label for="on"&gt;ON&lt;/label&gt;
+    &lt;input type="radio" name="flash" value="off" id="off"&gt;
+    &lt;label for="off"&gt;OFF&lt;/label&gt;
+    &lt;span&gt;label text :&lt;/span&gt;
+  &lt;/div&gt;
+  &lt;script&gt;
+  function check_rad(val) {
+    var inp = document.getElementsByName(val);
+    for (var i = 0; i &lt; inp.length; i++) {
+      if (inp[i].type == "radio" && inp[i].checked) {
+      return inp[i].value;
+      }
+    }
+  }  
+  var radio_val = check_rad("flash") // radio_val = "on"  
+  &lt;/script&gt;
+  
+  
+  
+  &lt;div class="group success"&gt;
+    &lt;select id="wifi_mode" name="wifi_mode" onchange="check_s()"&gt;
+      &lt;option  value="OFF"&gt;OFF&lt;/option&gt;
+      &lt;option  selected value="ST"&gt;Wireless client&lt;/option&gt;
+      &lt;option  value="AP"&gt;Access point&lt;/option&gt;
+    &lt;/select&gt;
+    &lt;span&gt;label text :&lt;/span&gt;
+  &lt;/div&gt;    
+  &lt;script&gt;    
+    function check_s() {
+      alert(document.getElementById("wifi_mode").value);
+    } 
+  &lt;/script&gt;
+   
+   
+   
+  &lt;div class="s12 m4 group"&gt;
+    &lt;input type="checkbox" class="checkbox" id="checkbox1" onchange="checkbox(this)" /&gt;
+    &lt;label for="checkbox1"&gt;checkbox&lt;/label&gt;
+    &lt;span&gt;label text :&lt;/span&gt;
+  &lt;/div&gt;  
+  &lt;script&gt;    
+    function checkbox(obj) {
+      alert(obj.checked ? "on" : "off");
+    }
+  &lt;/script&gt;
+
+</pre>
+    <br>
+    <div class="row">
+     <div class="s12 m4">
+      <div class="group">
+       <input type="number" id="num" required=" " min="0" max="255" value="">
+       <label for="num">Number</label>
+      </div>
+     </div>
+     <div class="s12 m4">
+      <div class="group">
+       <input type="text" id="text" name="text" required=" " value="">
+       <label for="text">Text</label>
+      </div>
+     </div>
+     <div class="s12 m4">
+      <div class="group">
+       <input type="password" id="pass" name="password" required=" " value="">
+       <label for="pass">Password</label>
+      </div>
+     </div>
+    </div>
+
+    <pre class="grey">
+  &lt;div class="group"&gt;
+    &lt;input type="number" name="number" id="num" required=" " min="0" max="255" value=""&gt;
+    &lt;label for="num"&gt;Number&lt;/label&gt;
+  &lt;/div&gt;
+
+  &lt;div class="group"&gt;
+    &lt;input id="input_text" type="text" name="text" required=" " value=""&gt;
+    &lt;label for="text"&gt;Text&lt;/label&gt;
+  &lt;/div&gt;
+
+  &lt;div class="group"&gt;
+    &lt;input type="password" name="password" required=" " value=""&gt;
+    &lt;label for="password"&gt;Password&lt;/label&gt;
+  &lt;/div&gt;
+
+  &lt;script&gt;
+    var val_name = document.getElementsByName("number")[0].value
+    var val_id = document.getElementById("input_text").value
+  &lt;/script&gt;
+<br>
+</pre>
+    <div class="row">
+     <div class="s6">
+      <div class="group">
+       <input type="color" id="rbg" name="rbg" value="#ff0000">
+       <label for="rbg">Выбрать цвет :</label>
+      </div>
+     </div>
+    </div>
+    <pre class="grey">
+  &lt;div class="group"&gt;
+    &lt;input type="color" id="rbg" name="rbg" value="#ff0000"&gt;
+    &lt;label for="rbg"&gt;Выбрать цвет :&lt;/label&gt;
+  &lt;/div&gt;
+</pre>
+
+    <br>
+    <div class="row">
+     <div class="s12">
+      <div class="group">
+       <button>button</button>
+       <button class="grey" id="btn_one">click_me</button>
+       <button class="success">success</button>
+       <button class="danger">danger</button>
+       <br>
+       <br>
+       <button class="warning round">warning</button>
+       <button class="info round small">info </button>
+       <button class="purple small">purple</button>
+       <button class="primary large">primary</button>
+      </div>
+     </div>
+    </div>
+    <pre class="grey">
+  &lt;button&gt;button&lt;/button&gt;
+  &lt;button class="grey" id="btn_one"&gt;click_me&lt;/button&gt;
+  &lt;button class="success"&gt;button&lt;/button&gt;
+  &lt;button class="warning round"&gt;button&lt;/button&gt;
+  &lt;button class="info round small"&gt;button &lt;/button&gt;
+  &lt;button class="purple small"&gt;small&lt;/button&gt;
+  &lt;button class="primary large"&gt;large&lt;/button&gt;
+
+  &lt;script&gt;
+    btn = document.getElementById("btn_one");
+    btn.onclick = function() {
+      btn.innerHTML = "click"
+    };
+  &lt;/script&gt;
+</pre>
+
+
+    <a name="alert"><br/><br/></a>
+    <h1>Alerts</h1>
+    <div class="row">
+     <div class="s12">
+      <div class="alert purple hover">
+       Простое статическое сообщение.
+      </div>
+      <pre class="grey">
+  &lt;div class="alert purple hover"&gt;
+    Простое статическое сообщение.
+  &lt;/div&gt;
+    </pre>
+      <br>
+      <div class="alert danger">
+       <span class="close" onclick="this.parentElement.style.display='none';">&times;</span>
+       <strong>Danger!</strong> Ошибка не хватает памяти.
+      </div>
+
+      <div class="alert info hover">
+       <span class="close" onclick="this.parentElement.style.display='none';">&times;</span>
+       <strong>Info!</strong>Неправильный логин или пароль.
+      </div>
+      <pre class="grey">
+
+  &lt;div class="alert info"&gt;
+    &lt;span class="close" onclick="this.parentElement.style.display='none';"&gt;&times;&lt;/span&gt;
+    &lt;strong&gt;Info!&lt;/strong&gt;Неправильный логин или пароль.
+  &lt;/div&gt;
+
+    </pre>
+     </div>
+    </div>
+
+    <a name="listgroup"><br/><br/></a>
+    <h1>List</h1>
+    <div class="row">
+     <div class="s12">
+      <br>
+      <ul class="l-g">
+       <li class="lg-i">List 0</li>
+       <li class="lg-i">List 1<span>0.2.3</span></li>
+       <li class="lg-i">List 2<span class="warning">0.2.3</span></li>
+       <li class="lg-i">List 3<span class="danger">0.2.3</span></li>
+       <li class="lg-i">
+        <span>
+       <input type="checkbox" class="checkbox" id="checkbox3" />
+       <label for="checkbox3"></label>
+       </span>
+       </li>
+
+      </ul>
+      <pre class="grey">
+ &lt;ul class="l-g"&gt;
+   &lt;li class="lg-i"&gt;List 0&lt;/li&gt;
+   &lt;li class="lg-i"&gt;List 1&lt;span>0.2.3&lt;/span&gt;&lt;/li&gt;
+   &lt;li class="lg-i"&gt;List 2&lt;span class="warning">0.2.3&lt;/span&gt;&lt;/li&gt;
+   &lt;li class="lg-i"&gt;List 3&lt;span class="danger">0.2.3&lt;/span&gt;&lt;/li&gt;
+   &lt;li class="lg-i"&gt;List 4&lt;span class="info">0.2.3&lt;/span&gt;&lt;/li&gt;
+ &lt;/ul>
+    </pre>
+     </div>
+    </div>
+
+    <a name="modal"><br/><br/></a>
+    <h1>Modal box</h1>
+    <div class="row">
+     <div class="s12">
+      <div class="group">
+       <button class="primary" id="btn_modal">Open Modal</button>
+      </div>
+      <br>
+      <pre class="grey">
+
+  &lt;div class="group"&gt;
+    &lt;button id="btn_modal">Open Modal&lt;/button&gt;
+  &lt;/div&gt;
+
+  &lt;div id="Modal" class="modal"&gt;
+    &lt;div class="m-cont"&gt;
+      &lt;span class="close" id="close_m"&gt;&times;&lt;/span&gt;
+      &lt;div class="m-body"&gt;
+        &lt;p&gt;Save settings?&lt;/p&gt;
+      &lt;/div&gt;
+      &lt;div class="m-foo"&gt;
+        &lt;button class="success"&gt;Yes&lt;/button&gt;
+        &lt;button class="danger"&gt;No&lt;/button&gt;
+      &lt;/div&gt;
+    &lt;/div&gt;
+  &lt;/div&gt;
+
+  &lt;script&gt;  
+    var close_m = document.getElementById("close_m");
+    var btn_modal = document.getElementById("btn_modal");
+
+    btn_modal.onclick = function() {
+      document.getElementById('Modal').classList.remove("hide");
+    };
+  
+    close_m.onclick = function() {
+      document.getElementById('Modal').classList.add("hide");
+    };  
+  &lt;/script&gt;
+
+</pre>
+     </div>
+    </div>
+
+    <a name="progbar"><br/><br/></a>
+    <h1>Progress Bar</h1>
+    <div class="row">
+     <div class="s12">
+      <div class="progbar">
+       <div class="bar" style="width:20%">
+        <div class="label">20%</div>
+       </div>
+      </div>
+      <br>
+      <div class="progbar">
+       <div class="bar danger" style="width:50%">
+        <div class="label">50%</div>
+       </div>
+      </div>
+      <br>
+      <div class="progbar">
+       <div class="bar purple" style="width:80%">
+        <div class="label">80%</div>
+       </div>
+      </div>
+
+     </div>
+    </div>
+
+
+    <pre class="grey">
+  &lt;div class="progbar"&gt;
+    &lt;div class="bar" style="width:20%"&gt;
+      &lt;div class="label"&gt;20%&lt;/div&gt;
+    &lt;/div&gt;
+  &lt;/div&gt;
+
+  &lt;div class="progbar"&gt;
+    &lt;div class="bar danger" style="width:50%"&gt;
+      &lt;div class="label"&gt;50%&lt;/div&gt;
+    &lt;/div&gt;
+  &lt;/div&gt;
+
+  &lt;div class="progbar"&gt;
+    &lt;div class="bar purple" style="width:80%"&gt;
+      &lt;div class="label"&gt;80%&lt;/div&gt;
+    &lt;/div&gt;
+  &lt;/div&gt;
+</pre>
+
+
+    <a name="range"><br/><br/></a>
+    <h1>Range horizontal</h1>
+    <div class="row">
+     <div class="s12">
+      <div class="group">
+       <input type="range" min="0" max="15" value="15" />
+       <label>Volume</label>
+      </div>
+      <div class="group">
+       <input type="range" min="0" max="100" value="8" />
+       <label>Level</label>
+      </div>
+      <div class="group">
+       <input type="range" min="0" max="255" value="8" />
+       <label>PWM</label>
+      </div>
+     </div>
+    </div>
+
+
+    <pre class="grey">
+
+  &lt;div class="group"&gt;
+    &lt;input type="range" min="0" max="15" value="15"/&gt;
+    &lt;label>Volume&lt;/label&gt;
+  &lt;/div&gt;
+
+</pre>
+
+    <h1>Range vertical</h1>
+    <div class="row">
+     <div class="s12">
+      <div class="group ver">
+       <input id="bass" type="range" min="0" max="15" value="15" />
+       <label>Bass</label>
+      </div>
+      <div class="group ver">
+       <input id="treble" type="range" min="0" max="15" value="8" />
+       <label>Treble</label>
+      </div>
+      <div class="group ver">
+       <input type="range" min="0" max="31" value="8" />
+       <label>Front</label>
+      </div>
+      <div class="group ver">
+       <input type="range" min="0" max="31" value="8" />
+       <label>Rear</label>
+      </div>
+     </div>
+    </div>
+
+
+    <pre class="grey">
+
+  &lt;div class="group ver"&gt;
+    &lt;input type="range" min="0" max="15" value="15"/&gt;
+    &lt;label>Bass&lt;/label&gt;
+  &lt;/div&gt;
+
+</pre>
+    <a name="tab"><br/><br/></a>
+    <h1>Tables</h1>
+
+    <div class="row">
+     <div class="s12">
+      <table>
+       <thead>
+        <tr>
+         <th>№</th>
+         <th>ChipID</th>
+         <th>FlashID</th>
+         <th>FS Total (byte)</th>
+         <th>FS Used (byte)</th>
+        </tr>
+       </thead>
+       <tbody>
+        <tr>
+         <td>1</td>
+         <td>b517900</td>
+         <td>1640ef00</td>
+         <td>3400046</td>
+         <td>47188</td>
+        </tr>
+        <tr>
+         <td>2</td>
+         <td>a325540</td>
+         <td>4585ff40</td>
+         <td>3400046</td>
+         <td>20456</td>
+        </tr>
+       </tbody>
+      </table>
+     </div>
+    </div>
+
+    <pre class="grey">
+  &lt;table&gt;
+    &lt;thead&gt;
+      &lt;tr&gt;
+        &lt;th&gt;№&lt;/th&gt;
+        &lt;th&gt;ChipID&lt;/th&gt;
+        &lt;th&gt;FlashID&lt;/th&gt;
+        &lt;th&gt;FS Total (byte)&lt;/th&gt;
+        &lt;th&gt;FS Used (byte)&lt;/th&gt;
+      &lt;/tr&gt;
+    &lt;/thead&gt;
+    &lt;tbody&gt;
+      &lt;tr&gt;
+        &lt;td&gt;1&lt;/td&gt;
+        &lt;td&gt;b517900&lt;/td&gt;
+        &lt;td&gt;1640ef00&lt;/td&gt;
+        &lt;td&gt;3400046&lt;/td&gt;
+        &lt;td&gt;47188&lt;/td&gt;
+      &lt;/tr&gt;
+      &lt;tr&gt;
+        &lt;td&gt;2&lt;/td&gt;
+        &lt;td&gt;a325540&lt;/td&gt;
+        &lt;td&gt;4585ff40&lt;/td&gt;
+        &lt;td&gt;3400046&lt;/td&gt;
+        &lt;td&gt;20456&lt;/td&gt;
+      &lt;/tr&gt;
+    &lt;/tbody&gt;
+  &lt;/table&gt;
+	</pre>
+
+    <h1>Loader</h1>
+    
+    <pre class="grey">    
+    &lt;div id="loader" class="loader hide"&gt;&lt;/div&gt;
+    
+    &lt;button onclick="document.getElementById('loader').classList.remove('hide')"&gt;Start&lt;/button&gt;
+    </pre>
+    
+   <div class="row">
+     <div class="s12">
+      <div class="group">
+       <button class="primary" onclick="document.getElementById('loader').classList.remove('hide')" >Start</button>
+       <button class="" onclick="document.getElementById('loader').classList.add('hide')">Stop</button>
+      </div>
+     </div>
+    </div>
+
+
+   </div>
+  </div>
+ </div>
+
+ <script>
+  var close_m = document.getElementById("close_m");
+  var btn_modal = document.getElementById("btn_modal");
+
+  btn_modal.onclick = function() {
+   document.getElementById('Modal').classList.remove("hide");
+  };
+
+  close_m.onclick = function() {
+   document.getElementById('Modal').classList.add("hide");
+  };
+
+  btn = document.getElementById("btn_one");
+  btn.onclick = function() {
+   btn.innerHTML = "click"
+  };
+
+ </script>
+
+</body>
+
+</html>

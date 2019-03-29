@@ -1,0 +1,83 @@
+<!DOCTYPE html>
+<html>
+<head>
+ <meta charset="UTF-8">
+ <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1.0">
+ <title>Smarthome</title>
+ <link rel="stylesheet" href="../static/iot.min.css" />
+ <link rel="shortcut icon" href="#" />
+ <style type="text/css">
+  .g {
+   background-color: darkgray;
+   border-radius: 0.5em;
+   margin-top: 0.5em;
+   margin-bottom: 0.5em;
+  }
+
+  .grey {
+   background-color: #ecebeb !important;
+  }
+
+  pre {
+   margin-top: 2em;
+   margin-bottom: 2em;
+  }
+
+ </style>
+ <script src="https://ajax.googleapis.com/ajax/libs/jquery/3.3.1/jquery.min.js"></script>
+</head>
+
+<body>
+ <div id="loader" class="loader hide"></div>
+ <div id="sideNav" class="sidenav">
+  <span href="javascript:void(0)" class="close" onclick="document.getElementById('sideNav').classList.toggle('open');">&times;</span>
+  <div class="in"></div>
+  <a href="#light">Освещение</a>
+  <a href="#rgb">Светодиоды</a>
+ </div>
+ <div class="sideopen warning"><a onclick="document.getElementById('sideNav').classList.toggle('open');">&equiv;</a></div>
+ <ul class="nav fix warning" id="topNav">
+  <li><a href="/" class="brand">Smarthome</a></li>
+  <li><a href="#light">Освещение</a></li>
+  <li><a href="#rgb">Светодиоды</a></li>
+  <!-- <li class="-exit"><a href="#" id="btn_exit" onclick="logout()">Exit</a></li> -->
+  <li class="-icon"><a href="#" onclick="document.getElementById('topNav').classList.toggle('res');">&equiv;</a></li>
+ </ul>
+ 
+    <a name="light"><br/><br/></a>
+    <h1>Освещение</h1>
+    <div class="row">
+     <div class="s12 m4">
+      <div class="group purple">
+          <input type="radio" name="light/lobby" value="1" onchange="mqttpub(this.name,this.value)" id="on">
+       <label for="on">ВКЛ</label>
+       <input type="radio" name="light/lobby" value="0" onchange="mqttpub(this.name,this.value)" id="off">
+       <label for="off">ВЫКЛ</label><span>Зал:</span>
+      </div>
+     </div>
+    </div>
+    <div id="configs" hidden>{{config}}</div> 
+    <script>     
+     function setDefaults(config){
+         $("input").each(function(index){
+             if (config[this.name] === "1" && this.id === "on")
+                this.checked = true;
+             else if (config[this.name] === "0" && this.id === "off")
+                this.checked = true;
+             else
+                this.checked = false;
+         })
+     }
+
+     function mqttpub(topic, msg) {
+         $.getJSON('/mqttpub', {
+	         topic: topic,
+             msg: msg
+	     });
+     }
+     var config = JSON.parse($("#configs").text());
+     setDefaults(config);
+    </script>
+    
+</body>
+</html>
