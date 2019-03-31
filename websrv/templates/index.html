@@ -6,10 +6,9 @@
  <title>Smarthome</title>
  <link rel="stylesheet" href="../static/iot.min.css" />
  <link rel="shortcut icon" href="#" />
- <script src="https://ajax.googleapis.com/ajax/libs/jquery/3.3.1/jquery.min.js"></script>
+ <script src="../static/jquery-3.3.1.min.js"></script>
+ <script src="../static/jscolor.js"></script>
  <script src="../static/tinycolor-min.js"></script>
- <link href="../static/bootstrap.colorpickersliders.min.css" rel="stylesheet">
- <script src="../static/bootstrap.colorpickersliders.min.js"></script>
  <style type="text/css">
   .g {
    background-color: darkgray;
@@ -37,13 +36,13 @@
   <span href="javascript:void(0)" class="close" onclick="document.getElementById('sideNav').classList.toggle('open');">&times;</span>
   <div class="in"></div>
   <a href="#light">Освещение</a>
-  <a href="#rgb">Светодиоды</a>
+  <a href="#rgb">RGB</a>
  </div>
  <div class="sideopen warning"><a onclick="document.getElementById('sideNav').classList.toggle('open');">&equiv;</a></div>
  <ul class="nav fix warning" id="topNav">
   <li><a href="/" class="brand">Smarthome</a></li>
   <li><a href="#light">Освещение</a></li>
-  <li><a href="#rgb">Светодиоды</a></li>
+  <li><a href="#rgb">RGB</a></li>
   <!-- <li class="-exit"><a href="#" id="btn_exit" onclick="logout()">Exit</a></li> -->
   <li class="-icon"><a href="#" onclick="document.getElementById('topNav').classList.toggle('res');">&equiv;</a></li>
  </ul>
@@ -62,29 +61,30 @@
     </div>
     
     <a name="rgb"><br/><br/></a>
-    <h1>Светодиоды</h1>
+    <h1>RGB</h1>
     <div class="row">
-        <div id="hsvflat"></div>
-        <div class="s12 group">
-        <button class="primary" onclick="mqttpub('rgb/kitchen','C000000000000')">ВЫКЛ</button>
+        <div class="group">
+            <input class="jscolor" id="rgbkitchencolor" type="text" name="rgb/kitchen" onchange="setColor(this.value)">
+            <label for="rgbkitchencolor">Цвет</label>
+        </div>
+        <div class="group">
+            <button class="primary" onclick="mqttpub('rgb/kitchen','C000000000000')">ВЫКЛ</button>
         </div>
     </div>
-    <br>
-    <div class="row">
     <div class="s12 m4 group">
-        <input type="checkbox" class="checkbox" id="checkbox1" onchange="checkbox(this)" />
-        <label for="checkbox1">Датчик движения</label>
+        <input type="checkbox" class="checkbox" name="rgb/kitchen" id="rgbkitchensensor" onchange="switchMovesensor(this)" />
+        <label for="rgbkitchensensor">Датчик движения</label>
     </div> 
     <div class="group" style="min-width:200px;">
-        <input type="number" name="number" id="num" required=" " min="0" max="255" value="">
+        <input type="number" name="number" id="num" required=" " min="0" max="255" value="" onchange="setMovesensorTimeout(this)">
         <label for="num">Автоотключение, мин.</label>
     </div>
     </div>
     
+    
+    
     <div id="configs" hidden>{{config}}</div> 
     <script>     
-     var isInit = true;
-     
      function setDefaults(config){
          $("input[type=radio]").each(function(index){
              if (config[this.name] === "1" && this.id === "on")
@@ -95,8 +95,12 @@
                 this.checked = false;
          })
          
-         $("input[type=color]").each(function(index){
-             this.value = getColor(config[this.name]);
+         $("input[class=jscolor]").each(function(index){
+             this.value = getColor(config['rgb/kitchen']);
+         })
+         
+         $("input[type=checkbox]").each(function(index){
+            
          })
      }
 
@@ -107,16 +111,19 @@
 	     });
      }
      
+     function setColor(color) {
+        var clr = tinycolor(color).toRgb();
+        var clrstr = "C" + cc(clr.r) + cc(clr.g) + cc(clr.b);
+        mqttpub("rgb/kitchen", clrstr);
+     }
+     
      function cc(c) {
-        var multiply = 1;
-        return ("0000" + Math.round((1023/255*c)*multiply).toString()).slice(-4);
+        return ("0000" + Math.round(1023/255*c).toString()).slice(-4);
      }
      
      function getColor(color) {
         var cg = color.substr(1).match(/.{1,4}/g);
-        return "#" + dc(cg[0])
-                   + dc(cg[1])
-                   + dc(cg[2]);
+        return dc(cg[0]) + dc(cg[1]) + dc(cg[2]);
      }
      
      function dc(c) {
@@ -125,24 +132,17 @@
         return res.length == 1 ? "0" + res : res;
      }
      
+     function switchMovesensor(obj) {
+        mqttpub(obj.name, "M"+(obj.checked ? "1" : "0"));
+     }
+     
+     function setMovesensorTimeout(obj) {
+        mqttpub(obj.name, "D"+(obj.value*60000000).toString());
+     }
+     
      var config = JSON.parse($("#configs").text());
      setDefaults(config);
-     
-     $("#hsvflat").ColorPickerSliders({
-        color: getColor(config["rgb/kitchen"]),
-        flat: true,
-        sliders: false,
-        swatches: false,
-        hsvpanel: true,
-        onchange: function(container, color) {
-            if (!isInit) {
-                var clr = "C" + cc(color.rgba.r) + cc(color.rgba.g) + cc(color.rgba.b);
-                mqttpub("rgb/kitchen", clr);
-            }
-        }
-    });
-    
-    isInit = false;
+
     </script>
     
 </body>
