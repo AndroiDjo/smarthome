@@ -1,1 +1,1 @@
-{"delay_move":1000000,"led_is_on":"1","detect_moves":"0","led_b":0,"led_g":0,"led_r":1023}
+{"color":{"r":100,"g":100,"b":100},"power":0,"detectmove":0,"delaymove":60000000}
