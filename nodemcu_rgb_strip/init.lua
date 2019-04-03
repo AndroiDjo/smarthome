@@ -1,3 +1,4 @@
+node.setcpufreq(node.CPU160MHZ)
 gpio.mode(5, gpio.OUTPUT)
 gpio.mode(6, gpio.OUTPUT)
 gpio.mode(7, gpio.OUTPUT)
