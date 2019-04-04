@@ -64,8 +64,8 @@ function ledoff()
 end
 
 function calcGradient()
-    if grad_time < 1 then
-        grad_time = 1
+    if grad_time < 5 then
+        grad_time = 5
     end
     
     if grad_steps > grad_time then
