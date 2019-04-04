@@ -87,10 +87,9 @@ function doGradient()
     led_from_g = led_g
     led_from_b = led_b
     grad_on = true
+    collectgarbage()
     curstep = 1
     calcGradient()
-    ledon()
-    collectgarbage()
     gradtmr:interval(grad_step_time)
     gradtmr:start()
 end
@@ -106,6 +105,7 @@ function write_settings(json)
     local jsonf = {}
     if file.open("setting.json", "r") then
         jsonf = sjson.decode(file.read())
+        collectgarbage()
         file.close()
     else
          print("Settings file not found! (write_settings)")
@@ -115,6 +115,7 @@ function write_settings(json)
     
     local ok, jsonw = pcall(sjson.encode, jsonf)
     if ok then
+      collectgarbage()
       if file.open("setting.json", "w") then
         file.write(jsonw)
         file.close()
@@ -179,6 +180,7 @@ end
 function onMsg(client, topic, data) 
   if data ~= nil then
     local jm = sjson.decode(data)
+    collectgarbage()
     processActions(jm)
     write_settings(jm)
   end
@@ -187,6 +189,7 @@ end
 local function init_settings()
     if file.open("setting.json", "r") then
         local json = sjson.decode(file.read())
+        collectgarbage()
         file.close()
         processActions(json)
     else
@@ -195,7 +198,8 @@ local function init_settings()
 end
 
 if file.open("private.json", "r") then
-    local json = sjson.decode(file.read())        
+    local json = sjson.decode(file.read())
+    collectgarbage()
     m = mqtt.Client("nodemcu_rgb_test", 120, json["mqtt_login"], json["mqtt_password"])
     file.close()
 end
@@ -207,6 +211,7 @@ m:on("message", onMsg)
 
 if file.open("private.json", "r") then
     local json = sjson.decode(file.read())        
+    collectgarbage()
     m:connect(json["mqtt_host"], json["mqtt_port"], 0, function(client)
       print("connected")
       client:subscribe("rgb/kitchen", 0)
