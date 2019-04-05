@@ -5,7 +5,7 @@ led_g = 1023
 led_b = 1023
 detect_moves = true
 delay_move = 300000000
-
+    
 grad_on = false
 grad_loop = false
 grad_time = 1000
@@ -25,7 +25,7 @@ gradtmr = tmr.create()
 gradtmr:register(grad_step_time, tmr.ALARM_AUTO, function (t)
                                            if curstep > grad_steps or not grad_on then
                                                gradtmr:stop()
-                                               if grad_loop then
+                                               if grad_loop and grad_on then
                                                   reverseGradient()
                                                end
                                            else
@@ -39,7 +39,6 @@ gradtmr:register(grad_step_time, tmr.ALARM_AUTO, function (t)
                                                    led_b = led_b + delta_b
                                                end
                                                print(led_r)
-                                               print(node.heap())
                                                pwm.setduty(5, led_r)
                                                pwm.setduty(6, led_g)
                                                pwm.setduty(7, led_b)
@@ -48,22 +47,46 @@ gradtmr:register(grad_step_time, tmr.ALARM_AUTO, function (t)
                                        end)
 
 function ledon()
+    print("ledon()")
+    print("before"..led_r)
+    led_to_r = led_r
+    led_to_g = led_g
+    led_to_b = led_b
+    local power_on_instructions = sjson.decode('{"color":{"r":0,"g":0,"b":0},"gradtime":500,"gradsteps":100,"gradloop":0,"gradient":1}')
+    collectgarbage()
+    processActions(power_on_instructions)
+    print("after"..led_r)
+    led_r = led_to_r
+    led_g = led_to_g
+    led_b = led_to_b
+    print("after2"..led_r)
+        --[[
     pwm.setduty(5, led_r)
     pwm.setduty(6, led_g)
-    pwm.setduty(7, led_b)
+    pwm.setduty(7, led_b)]]
     led_is_on = true
     last_move = tmr.now()
 end
 
 function ledoff()
-    grad_on = false
+    print("ledoff()")
+    print("before"..led_r)
+    local power_off_instructions = sjson.decode('{"tocolor":{"r":0,"g":0,"b":0},"gradtime":1000,"gradsteps":200,"gradloop":0,"gradient":1}')
+    collectgarbage()
+    processActions(power_off_instructions)
+    print("after"..led_r)
+    led_r = led_from_r
+    led_g = led_from_g
+    led_b = led_from_b
+    print("after2"..led_r)
     led_is_on = false
-    pwm.setduty(5, 0)
+   --[[ pwm.setduty(5, 0)
     pwm.setduty(6, 0)
-    pwm.setduty(7, 0)
+    pwm.setduty(7, 0)]]
 end
 
 function calcGradient()
+    print("calcGradient()")
     if grad_time < 5 then
         grad_time = 5
     end
@@ -83,10 +106,11 @@ function calcGradient()
 end
 
 function doGradient()
+    print("doGradient()")
     led_from_r = led_r
     led_from_g = led_g
     led_from_b = led_b
-    grad_on = true
+    led_is_on = true
     collectgarbage()
     curstep = 1
     calcGradient()
@@ -95,6 +119,7 @@ function doGradient()
 end
 
 function reverseGradient()
+    print("reverseGradient()")
     led_to_r = led_from_r
     led_to_g = led_from_g
     led_to_b = led_from_b
@@ -102,6 +127,7 @@ function reverseGradient()
 end
 
 function write_settings(json)
+    print("write_settings()")
     local jsonf = {}
     if file.open("setting.json", "r") then
         jsonf = sjson.decode(file.read())
@@ -128,6 +154,7 @@ function write_settings(json)
 end
 
 function processActions(jm)
+print("processActions()")
     if jm.color ~= nil then
         led_r = jm.color.r
         led_g = jm.color.g
@@ -162,6 +189,7 @@ function processActions(jm)
     
     if jm.gradient ~= nil then
         if jm.gradient == 1 then
+            grad_on = true
             doGradient()
         else
             grad_on = false
@@ -178,6 +206,7 @@ function processActions(jm)
 end
 
 function onMsg(client, topic, data) 
+print("onMsg()")
   if data ~= nil then
     local jm = sjson.decode(data)
     collectgarbage()
@@ -187,6 +216,7 @@ function onMsg(client, topic, data)
 end
 
 local function init_settings()
+print("init_settings()")
     if file.open("setting.json", "r") then
         local json = sjson.decode(file.read())
         collectgarbage()
@@ -233,7 +263,7 @@ pwm.start(7)
 
 mytimer = tmr.create()
 mytimer:register(1000, tmr.ALARM_AUTO, function (t)
-                                           if detect_moves then
+                                           if detect_moves and led_is_on then
                                                if tmr.now() - last_move > delay_move then
                                                   ledoff()
                                                end
@@ -246,7 +276,11 @@ gpio.trig(2, "high", function(level, when)
                         if(detect_moves) then
                             last_move = tmr.now()
                             if not led_is_on then
-                                ledon()
+                                if grad_on then
+                                    doGradient()
+                                else
+                                    ledon()
+                                end
                             end
                         end
                      end)
