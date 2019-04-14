@@ -9,16 +9,21 @@ def index():
     json_string = json.dumps(get_settings())
     return render_template('index.html', config=json_string)
 
+@app.route('/dev')
+def indexdev():
+    json_string = json.dumps(get_settings())
+    return render_template('indexdev.html', config=json_string)
+
 @app.route('/example')
 def example():
     return render_template('example.html')
 
 @app.route('/mqttpub')
 def mqttpub():
-    req_t = str(request.args.get('topic'))
-    req_m = str(request.args.get('msg'))
+    req_t = request.args.get('topic')
+    req_m = request.args.get('msg')
     mqtt_init.publish(req_t, req_m)
-    set_settings(req_t, req_m)
+    set_settings(req_t, json.loads(req_m))
     return "OK"
 
 def get_settings():
@@ -28,7 +33,7 @@ def get_settings():
 
 def set_settings(name, value):
     config = get_settings()
-    config[name] = value
+    config[name].update(value)
     with open('config.json', 'w') as f:
         json.dump(config, f)
 

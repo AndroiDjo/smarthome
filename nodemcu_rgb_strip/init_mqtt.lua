@@ -141,7 +141,7 @@ function calcGradient()
     if grad_steps > grad_time then
         grad_steps = grad_time
     end
-    
+
     grad_step_time = grad_time / grad_steps
     if grad_step_time < 10 then
         grad_step_time = 10
@@ -313,7 +313,7 @@ end
 if file.open("private.json", "r") then
     local json = sjson.decode(file.read())
     collectgarbage()
-    m = mqtt.Client("nodemcu_rgb_test", 120, json["mqtt_login"], json["mqtt_password"])
+    m = mqtt.Client("nodemcu_rgb", 120, json["mqtt_login"], json["mqtt_password"])
     file.close()
 end
 

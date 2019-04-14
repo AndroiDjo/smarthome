@@ -25,6 +25,10 @@
    margin-top: 2em;
    margin-bottom: 2em;
   }
+  
+  input[type="number"] {
+    width: 200px;
+  }
 
  </style>
  
@@ -62,46 +66,73 @@
     
     <a name="rgb"><br/><br/></a>
     <h1>RGB</h1>
-    <div class="row">
-        <div class="group">
-            <input type="color" id="rgbkitchencolor" name="rgb/kitchen" onchange="setColor(this.value)">
-            <label for="rgbkitchencolor">Цвет</label>
-        </div>
-        <div class="group">
-            <button class="primary" onclick="mqttpub('rgb/kitchen','C000000000000')">ВЫКЛ</button>
-        </div>
+    <div class="s12 m4 group">
+        <input type="checkbox" class="checkbox" name="rgb/kitchen" id="power" onchange="switchCheckBox(this)" />
+        <label for="power">Вкл/выкл</label>
+    </div>
+    <div class="group">
+        <input type="color" id="tocolor" name="rgb/kitchen" onchange="setColor(this)">
+        <label for="tocolor">Цвет</label>
     </div>
     <div class="s12 m4 group">
-        <input type="checkbox" class="checkbox" name="rgb/kitchen" id="rgbkitchensensor" onchange="switchMovesensor(this)" />
-        <label for="rgbkitchensensor">Датчик движения</label>
+        <input type="checkbox" class="checkbox" name="rgb/kitchen" id="gradient" onchange="processGradient(this)" />
+        <label for="gradient">Градиент</label>
+    </div>
+    <div id="rgbkitchengradientblock" style="display: none;">
+        <div class="group">
+            <input type="color" id="fromcolor" name="rgb/kitchen" onchange="processGradient(this)">
+            <label for="fromcolor">с цвета</label>
+        </div>
+        <div class="group">
+            <input type="number" name="rgb/kitchen" id="gradtime" data-multiplier="1" required=" " min="10" value="" onchange="processGradient(this)">
+            <label for="gradtime">Время градиента, мс</label>
+        </div>
+        <div class="group">
+            <input type="number" name="rgb/kitchen" id="gradsteps" data-multiplier="1" required=" " min="1" value="" onchange="processGradient(this)">
+            <label for="gradsteps">Количество шагов градиента</label>
+        </div> 
+    </div>
+    <div class="s12 m4 group">
+        <input type="checkbox" class="checkbox" name="rgb/kitchen" id="detectmove" onchange="switchCheckBox(this)" />
+        <label for="detectmove">Датчик движения</label>
     </div> 
-    <div class="group" style="min-width:200px;">
-        <input type="number" name="number" id="num" required=" " min="0" max="255" value="" onchange="setMovesensorTimeout(this)">
-        <label for="num">Автоотключение, мин.</label>
-    </div>
-    </div>
-    
-    
+    <div class="group">
+        <input type="number" name="rgb/kitchen" id="delaymove" data-multiplier="60000000" required=" " min="0" max="255" value="" onchange="editInput(this)">
+        <label for="delaymove">Автоотключение, мин.</label>
+    </div>    
     
     <div id="configs" hidden>{{config}}</div> 
     <script>     
+     var config = JSON.parse($("#configs").text());
+     
      function setDefaults(config){
-         $("input[type=radio]").each(function(index){
-             if (config[this.name] === "1" && this.id === "on")
-                this.checked = true;
-             else if (config[this.name] === "0" && this.id === "off")
-                this.checked = true;
-             else
-                this.checked = false;
-         })
-         
-         $("input[class=jscolor]").each(function(index){
-             this.value = getColor(config['rgb/kitchen']);
-         })
-         
          $("input[type=checkbox]").each(function(index){
-            
+             try {
+                this.checked = (config[this.name][this.id] == 1);
+             } catch (e) {
+                console.log('Ошибка ' + e.name + ":" + e.message + "\n" + e.stack);
+             }
          })
+         
+         $("input[type=color]").each(function(index){
+             try {
+                this.value = getColor(config[this.name][this.id]);
+             } catch (e) {
+                console.log('Ошибка ' + e.name + ":" + e.message + "\n" + e.stack);
+             }
+         })
+         
+         $("input[type=number]").each(function(index){
+             try {
+                this.value = parseInt(config[this.name][this.id]) / parseInt(this.dataset.multiplier);
+             } catch (e) {
+                console.log('Ошибка ' + e.name + ":" + e.message + "\n" + e.stack);
+             }
+         })
+
+         if (config["rgb/kitchen"].gradient == 1) {
+            $("#rgbkitchengradientblock").slideToggle('slow');
+         }
      }
 
      function mqttpub(topic, msg) {
@@ -111,19 +142,38 @@
 	     });
      }
      
-     function setColor(color) {
-        var clr = tinycolor(color).toRgb();
-        var clrstr = "C" + cc(clr.r) + cc(clr.g) + cc(clr.b);
-        mqttpub("rgb/kitchen", clrstr);
+     function switchCheckBox(obj) {
+        var json = {}
+        json[obj.id] = (obj.checked ? 1 : 0);
+        config[obj.name][obj.id] = json[obj.id]
+        mqttpub(obj.name, JSON.stringify(json));
+     }
+     
+     function editInput(obj) {
+        var json = {}
+        var mlt = parseInt(obj.dataset.multiplier);
+        json[obj.id] = parseInt(obj.value) * mlt;
+        config[obj.name][obj.id] = json[obj.id]
+        mqttpub(obj.name, JSON.stringify(json));
+     }
+     
+     function getJsonColor(obj) {
+        var clr = tinycolor(obj.value).toRgb();
+        var json = {power:config[obj.name].power};
+        json[obj.id] = {r:cc(clr.r), g:cc(clr.g), b:cc(clr.b)};
+        return json;
+     }
+     
+     function setColor(obj) {
+        mqttpub(obj.name, JSON.stringify(getJsonColor(obj)));
      }
      
      function cc(c) {
-        return ("0000" + Math.round(1023/255*c).toString()).slice(-4);
+        return Math.round(1023/255*c);
      }
      
-     function getColor(color) {
-        var cg = color.substr(1).match(/.{1,4}/g);
-        return dc(cg[0]) + dc(cg[1]) + dc(cg[2]);
+     function getColor(c) {
+        return '#' + dc(c.r) + dc(c.g) + dc(c.b);
      }
      
      function dc(c) {
@@ -132,15 +182,16 @@
         return res.length == 1 ? "0" + res : res;
      }
      
-     function switchMovesensor(obj) {
-        mqttpub(obj.name, "M"+(obj.checked ? "1" : "0"));
+     function processGradient(obj) {
+        if (obj.id == "gradient") {
+            $("#rgbkitchengradientblock").slideToggle('slow');
+        }
+        var json = {gradient:($("#gradient").is(":checked") ? 1 : 0), gradtime:parseInt($("#gradtime").prop("value")), gradsteps:parseInt($("#gradsteps").prop("value")), gradloop:1};
+        var fromcolor = getJsonColor($("#fromcolor")[0]);
+        var tocolor = getJsonColor($("#tocolor")[0]);
+        mqttpub(obj.name, JSON.stringify($.extend(json, fromcolor, tocolor)));
      }
      
-     function setMovesensorTimeout(obj) {
-        mqttpub(obj.name, "D"+(obj.value*60000000).toString());
-     }
-     
-     var config = JSON.parse($("#configs").text());
      setDefaults(config);
 
     </script>
