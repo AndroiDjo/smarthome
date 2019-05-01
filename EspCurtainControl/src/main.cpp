@@ -6,12 +6,17 @@
 #include <ArduinoJson.h>
 #include <AccelStepper.h>
 
-const char* privateFile = "/private.json";
-const char* configFile = "/config.json";
-int jsonSize = 1024;
-const int MS1 = 13;
-const int MS2 = 15;
+const char* privateFile = "/private.json"; // файл для хранения учетных данных
+const char* configFile = "/config.json"; // файл для хранения настроек модуля
+int jsonSize = 1024; // размер буфера для парсинга json
+// MS1 и MS2 - пины для управления делителем шага мотора
+const int MS1 = 13; // D7
+const int MS2 = 15; // D8
 
+const int PIN_SLP = 4; // D2 - спящий режим шагового двигателя
+const int PIN_PWR = 5; // D1 - выключение шагового двигателя
+
+// учетные данные Mosquitto
 struct Mqtt {
   char host[20];
   int port;
@@ -19,25 +24,26 @@ struct Mqtt {
   char pass[20];
 };
 
-bool power = true;
-bool is_running = false;
-bool is_opened = false;
-bool forward = true;
-bool step_callback = false;
-bool step_last_dir = forward;
-bool first_load = true;
-bool is_error = false;
+bool power = true; // переменная отвечает за отключение/включение мотора
+bool is_running = false; // на данный момент крутится
+bool is_opened = false; // шторы открыты
+bool forward = true; // направление вращения
+bool step_callback = false; // после завершения вращения нужен callback
+bool step_last_dir = forward; // запоминаем направление вращения перед началом вращения
+bool first_load = true; // первая загрузка платы (после ресета)
+bool is_error = false; // получена ошибка, требуется ручное вмешательство
 
-int stepmaxspeed = 2000;
-int stepacceleration = 300;
-long stepmoveto = 10000;
-int stepdel = 1;
+int stepmaxspeed = 2000; // максимальная скорость мотора
+int stepacceleration = 300; // ускорение вращения
+long stepmoveto = 10000; // количество шагов вращения
+int stepdel = 1; // делитель шага
 
 WiFiClient espClient;
 PubSubClient client(espClient);
 Mqtt mqtt;
 AccelStepper stepper(1,12,14); // 12(D6) - step, 14(D5) - dir
 
+// что-то пошло не так, требуется исправление ошибки
 void somethingWrong(char* msg) {
    is_error = true;
    while (is_error) {
@@ -53,6 +59,7 @@ void somethingWrong(char* msg) {
    }
 }
 
+// сохранение параметров в формате json в SPIFFS память
 void saveJsonParams(JsonObject& json) {
    File file = SPIFFS.open(configFile, "r");
    DynamicJsonDocument doc(jsonSize);
@@ -69,7 +76,7 @@ void saveJsonParams(JsonObject& json) {
     }
     existconfig = true;
    }
-   serializeJsonPretty(doc, Serial);
+
    File destFile = SPIFFS.open(configFile, "w");
    bool srlzbool;
    if (existconfig) {
@@ -85,6 +92,7 @@ void saveJsonParams(JsonObject& json) {
    destFile.close();
 }
 
+// подготовка к движению штор
 void moveCurtains() {
   if (first_load && is_running) {
       somethingWrong("need calibrate!");    
@@ -101,12 +109,6 @@ void moveCurtains() {
     stepper.moveTo(stepper.currentPosition() + stepmoveto);
   } else if (!forward && !is_opened) {
     stepper.moveTo(stepper.currentPosition() - stepmoveto);
-  } else {
-    Serial.println("moveCurtains else");
-    Serial.print("forward=");
-    Serial.println(forward);
-    Serial.print("is_opened=");
-    Serial.println(is_opened);
   }
 
   if (stepdel == 2) {
@@ -128,22 +130,27 @@ void moveCurtains() {
     is_running = true;
     step_last_dir = forward;
 
+    digitalWrite(PIN_SLP, HIGH);
+    delay(50);
+
     StaticJsonDocument<100> doc;
     doc["is_running"] = is_running;
     JsonObject jo = doc.as<JsonObject>();
     saveJsonParams(jo);
   }
-
-  Serial.println(stepper.currentPosition());
-  Serial.println(forward);
-  Serial.println(stepmoveto);
-  Serial.print("stepper.distanceToGo()=");
-  Serial.println(stepper.distanceToGo());
 }
 
+// обработка json команд
 void parseRequest(DynamicJsonDocument& doc) {
   if (doc.containsKey("power")) {
     power = doc["power"];
+    if (!is_running) { // на ходу не выключаем мотор
+      if (power) {
+        digitalWrite(PIN_PWR, LOW); // мотор включен
+      } else {
+        digitalWrite(PIN_PWR, HIGH); // мотор выключен
+      }
+    }
   }
 
   if (doc.containsKey("stepmaxspeed")) {
@@ -180,6 +187,7 @@ void parseRequest(DynamicJsonDocument& doc) {
   }
 }
 
+// загрузка json параметров из SPIFFS
 void loadJsonParams() {
    File file = SPIFFS.open(configFile, "r");
    DynamicJsonDocument doc(jsonSize);
@@ -197,6 +205,7 @@ void loadJsonParams() {
    }
 }
 
+// чтение учетных данных из SPIFFS
 void initPrivate() {
   File file = SPIFFS.open(privateFile, "r");
   StaticJsonDocument<256> doc;
@@ -215,15 +224,8 @@ void initPrivate() {
   mqtt.port = doc["mqtt_port"];
 }
 
+// обработчик MQTT команд
 void callback(char* topic, byte* payload, unsigned int length) {
-  Serial.print("Message arrived [");
-  Serial.print(topic);
-  Serial.print("] ");
-  for (int i = 0; i < length; i++) {
-    Serial.print((char)payload[i]);
-  }
-  Serial.println();
-
   DynamicJsonDocument doc(jsonSize);
   DeserializationError error = deserializeJson(doc, payload, length);
   if (error) {
@@ -235,6 +237,7 @@ void callback(char* topic, byte* payload, unsigned int length) {
   saveJsonParams(jobj);
 }
 
+// переподключение к MQTT брокеру
 void reconnect() {
   while (!client.connected()) {
     Serial.print("Attempting MQTT connection...");
@@ -251,10 +254,13 @@ void reconnect() {
   }
 }
 
+// функция-callback вызываемая после завершения вращения мотора
 void stepperCallback() {
   is_running = false;
   is_opened = !step_last_dir;
   step_callback = false;
+
+  digitalWrite(PIN_SLP, LOW);
   
   StaticJsonDocument<100> doc;
   doc["is_running"] = is_running;
@@ -264,19 +270,21 @@ void stepperCallback() {
 }
 
 void setup() {
+  pinMode(2, OUTPUT);
+  pinMode(MS1, OUTPUT);
+  pinMode(MS2, OUTPUT);
+  pinMode(PIN_SLP, OUTPUT);
+  pinMode(PIN_PWR, OUTPUT);
+  delay(10);
+  digitalWrite(PIN_SLP, LOW);
+  digitalWrite(PIN_PWR, LOW);
+
   Serial.begin(115200);
   WiFiManager wifiManager;
   //wifiManager.resetSettings();
   wifiManager.autoConnect("AutoConnectAP");
   Serial.println("wifi connected");
-  
-  pinMode(2, OUTPUT);
-  pinMode(MS1, OUTPUT);
-  pinMode(MS2, OUTPUT);
-  delay(50);
-  digitalWrite(2, LOW);
-  delay(2000);
-  
+  delay(2000);  
   Serial.println("Mounting FS...");
   if (!SPIFFS.begin()) {
     somethingWrong("Failed to mount file system");
@@ -288,6 +296,7 @@ void setup() {
     reconnect();
   }
   loadJsonParams();
+  digitalWrite(2, LOW);
 }
 
 void loop() {
