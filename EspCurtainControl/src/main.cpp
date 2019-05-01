@@ -19,13 +19,14 @@ struct Mqtt {
   char pass[20];
 };
 
-boolean power = true;
-boolean is_running = false;
-boolean is_opened = false;
-boolean forward = true;
-boolean step_callback = false;
-boolean step_last_dir = forward;
-boolean first_load = true;
+bool power = true;
+bool is_running = false;
+bool is_opened = false;
+bool forward = true;
+bool step_callback = false;
+bool step_last_dir = forward;
+bool first_load = true;
+bool is_error = false;
 
 int stepmaxspeed = 2000;
 int stepacceleration = 300;
@@ -38,7 +39,8 @@ Mqtt mqtt;
 AccelStepper stepper(1,12,14); // 12(D6) - step, 14(D5) - dir
 
 void somethingWrong(char* msg) {
-   while (true) {
+   is_error = true;
+   while (is_error) {
      digitalWrite(2, HIGH);
      delay(1000);
      digitalWrite(2, LOW);
@@ -46,6 +48,7 @@ void somethingWrong(char* msg) {
      Serial.println(msg);
      if (client.connected()) {
        client.publish("log/error", msg);
+       client.loop();
      }
    }
 }
@@ -53,7 +56,7 @@ void somethingWrong(char* msg) {
 void saveJsonParams(JsonObject& json) {
    File file = SPIFFS.open(configFile, "r");
    DynamicJsonDocument doc(jsonSize);
-   boolean existconfig = false;
+   bool existconfig = false;
    if (file) {   
     DeserializationError error = deserializeJson(doc, file);
     if (error) {
@@ -68,7 +71,7 @@ void saveJsonParams(JsonObject& json) {
    }
    serializeJsonPretty(doc, Serial);
    File destFile = SPIFFS.open(configFile, "w");
-   boolean srlzbool;
+   bool srlzbool;
    if (existconfig) {
      srlzbool = (serializeJson(doc, destFile) == 0);
    } else {
@@ -84,7 +87,7 @@ void saveJsonParams(JsonObject& json) {
 
 void moveCurtains() {
   if (first_load && is_running) {
-    somethingWrong("need calibrate!");
+      somethingWrong("need calibrate!");    
   }
   first_load = false;
   if (!power || is_running) {
@@ -95,9 +98,15 @@ void moveCurtains() {
   stepper.setMaxSpeed(stepmaxspeed);
   stepper.setAcceleration(stepacceleration);
   if (forward && is_opened) {
-    stepper.moveTo(stepmoveto);
+    stepper.moveTo(stepper.currentPosition() + stepmoveto);
   } else if (!forward && !is_opened) {
-    stepper.moveTo(0);
+    stepper.moveTo(stepper.currentPosition() - stepmoveto);
+  } else {
+    Serial.println("moveCurtains else");
+    Serial.print("forward=");
+    Serial.println(forward);
+    Serial.print("is_opened=");
+    Serial.println(is_opened);
   }
 
   if (stepdel == 2) {
@@ -120,7 +129,7 @@ void moveCurtains() {
     step_last_dir = forward;
 
     StaticJsonDocument<100> doc;
-    doc["is_running"] = true;
+    doc["is_running"] = is_running;
     JsonObject jo = doc.as<JsonObject>();
     saveJsonParams(jo);
   }
@@ -159,6 +168,10 @@ void parseRequest(DynamicJsonDocument& doc) {
 
   if (doc.containsKey("is_opened")) {
     is_opened = doc["is_opened"];
+  }
+
+  if (doc.containsKey("is_error")) {
+    is_error = doc["is_error"];
   }
 
   if(doc.containsKey("curtain")) {
@@ -244,7 +257,7 @@ void stepperCallback() {
   step_callback = false;
   
   StaticJsonDocument<100> doc;
-  doc["is_running"] = false;
+  doc["is_running"] = is_running;
   doc["is_opened"] = is_opened;
   JsonObject jo = doc.as<JsonObject>();
   saveJsonParams(jo);
@@ -271,6 +284,9 @@ void setup() {
   initPrivate();
   client.setServer(mqtt.host, mqtt.port);
   client.setCallback(callback);
+  if (!client.connected()) {
+    reconnect();
+  }
   loadJsonParams();
 }
 
