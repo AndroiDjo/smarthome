@@ -33,6 +33,13 @@ bool step_last_dir = forward; // запоминаем направление в�
 bool first_load = true; // первая загрузка платы (после ресета)
 bool is_error = false; // получена ошибка, требуется ручное вмешательство
 
+bool dynamicstepsize = false; // режим обеспечения плавности путем изменения размера шага
+int del1prc = 0; // процент вращения мотора на полном шаге
+int del2prc = 60; // процент вращения мотора на полушаге
+int del4prc = 20; // процент вращения мотора на четверть шаге
+int del8prc = 20; // процент вращения мотора на 1/8 шаге
+long curstep = 0; // текущий шаг
+
 int stepmaxspeed = 2000; // максимальная скорость мотора
 int stepacceleration = 300; // ускорение вращения
 long stepmoveto = 10000; // количество шагов вращения
@@ -57,6 +64,19 @@ void somethingWrong(char* msg) {
        client.loop();
      }
    }
+}
+
+// поиск вложенного объекта json
+bool containsNestedKey(const JsonObject& obj, const char* key) {
+    for (const JsonPair& pair : obj) {
+        if (!strcmp(pair.key, key))
+            return true;
+
+        if (containsNestedKey(pair.value.as<JsonObject>(), key)) 
+            return true;
+    }
+
+    return false;
 }
 
 // сохранение параметров в формате json в SPIFFS память
@@ -92,6 +112,35 @@ void saveJsonParams(JsonObject& json) {
    destFile.close();
 }
 
+// установка значений по умолчанию для динамического переключения делителей шага
+void setDynamicStepDefault() {
+  int del1prc = 0;
+  int del2prc = 100;
+  int del4prc = 40;
+  int del8prc = 20;
+}
+
+// процедура обработки динамического переключения делителей шага
+void dynamicStepLoop() {
+  int prc;
+  int half = stepmoveto / 2;
+  if (curstep < half) {
+    prc = curstep / half * 100;
+    if (prc <= del8prc && stepdel != 8) {
+      stepdel = 8;
+    } else if (prc > del8prc && prc <= del4prc && stepdel != 4) {
+      stepdel = 4;
+    } else if (prc > del4prc && prc <= del2prc && stepdel != 2) {
+      stepdel = 2;
+    } else if (prc > del2prc && prc <= del1prc && stepdel != 1) {
+      stepdel = 1;
+    }
+  } else {
+    prc = (curstep - half) / half * 100;
+    //if (prc > )
+  }
+}
+
 // подготовка к движению штор
 void moveCurtains() {
   if (first_load && is_running) {
@@ -103,6 +152,7 @@ void moveCurtains() {
     return;
   }
 
+  curstep = 0;
   stepper.setMaxSpeed(stepmaxspeed);
   stepper.setAcceleration(stepacceleration);
   if (forward && is_opened) {
@@ -111,18 +161,24 @@ void moveCurtains() {
     stepper.moveTo(stepper.currentPosition() - stepmoveto);
   }
 
-  if (stepdel == 2) {
-    digitalWrite(MS1, HIGH);
-    digitalWrite(MS2, LOW);
-  } else if (stepdel == 4) {
-    digitalWrite(MS1, LOW);
-    digitalWrite(MS2, HIGH);
-  } else if (stepdel == 8) {
-    digitalWrite(MS1, HIGH);
-    digitalWrite(MS2, HIGH);
+  if (dynamicstepsize) {
+    if (del1prc+del2prc+del4prc+del8prc != 100) {
+      setDynamicStepDefault();
+    }
   } else {
-    digitalWrite(MS1, LOW);
-    digitalWrite(MS2, LOW);
+    if (stepdel == 2) {
+      digitalWrite(MS1, HIGH);
+      digitalWrite(MS2, LOW);
+    } else if (stepdel == 4) {
+      digitalWrite(MS1, LOW);
+      digitalWrite(MS2, HIGH);
+    } else if (stepdel == 8) {
+      digitalWrite(MS1, HIGH);
+      digitalWrite(MS2, HIGH);
+    } else {
+      digitalWrite(MS1, LOW);
+      digitalWrite(MS2, LOW);
+    }
   }
 
   if (stepper.distanceToGo() != 0) {
@@ -179,6 +235,10 @@ void parseRequest(DynamicJsonDocument& doc) {
 
   if (doc.containsKey("is_error")) {
     is_error = doc["is_error"];
+  }
+
+  if (doc.containsKey("dynamicstepsize")) {
+    dynamicstepsize = doc["dynamicstepsize"];
   }
 
   if(doc.containsKey("curtain")) {
@@ -307,6 +367,9 @@ void loop() {
 
   if (stepper.distanceToGo() == 0 && step_callback) {
     stepperCallback();
+  }
+  if (dynamicstepsize) {
+
   }
   stepper.run();
 }
