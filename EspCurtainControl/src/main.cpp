@@ -34,10 +34,10 @@ bool first_load = true; // первая загрузка платы (после 
 bool is_error = false; // получена ошибка, требуется ручное вмешательство
 
 bool dynamicstepsize = false; // режим обеспечения плавности путем изменения размера шага
-int del1prc = 0; // процент вращения мотора на полном шаге
-int del2prc = 60; // процент вращения мотора на полушаге
-int del4prc = 20; // процент вращения мотора на четверть шаге
-int del8prc = 20; // процент вращения мотора на 1/8 шаге
+int del1prc; // процент вращения мотора на полном шаге
+int del2prc; // процент вращения мотора на полушаге
+int del4prc; // процент вращения мотора на четверть шаге
+int del8prc; // процент вращения мотора на 1/8 шаге
 long curstep = 0; // текущий шаг
 
 int stepmaxspeed = 2000; // максимальная скорость мотора
@@ -114,7 +114,7 @@ void saveJsonParams(JsonObject& json) {
 
 // установка значений по умолчанию для динамического переключения делителей шага
 void setDynamicStepDefault() {
-  int del1prc = 0;
+  int del1prc = 100;
   int del2prc = 100;
   int del4prc = 40;
   int del8prc = 20;
@@ -162,7 +162,7 @@ void moveCurtains() {
   }
 
   if (dynamicstepsize) {
-    if (del1prc+del2prc+del4prc+del8prc != 100) {
+    if ((!del1prc &&) ) {
       setDynamicStepDefault();
     }
   } else {
