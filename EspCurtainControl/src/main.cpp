@@ -112,6 +112,22 @@ void saveJsonParams(JsonObject& json) {
    destFile.close();
 }
 
+void setStepDel() {
+  if (stepdel == 2) {
+    digitalWrite(MS1, HIGH);
+    digitalWrite(MS2, LOW);
+  } else if (stepdel == 4) {
+    digitalWrite(MS1, LOW);
+    digitalWrite(MS2, HIGH);
+  } else if (stepdel == 8) {
+    digitalWrite(MS1, HIGH);
+    digitalWrite(MS2, HIGH);
+  } else {
+    digitalWrite(MS1, LOW);
+    digitalWrite(MS2, LOW);
+  }
+}
+
 // установка значений по умолчанию для динамического переключения делителей шага
 void setDynamicStepDefault() {
   int del1prc = 100;
@@ -124,20 +140,41 @@ void setDynamicStepDefault() {
 void dynamicStepLoop() {
   int prc;
   int half = stepmoveto / 2;
+  bool stepdelchanged = false;
   if (curstep < half) {
     prc = curstep / half * 100;
     if (prc <= del8prc && stepdel != 8) {
       stepdel = 8;
+      stepdelchanged = true;
     } else if (prc > del8prc && prc <= del4prc && stepdel != 4) {
       stepdel = 4;
+      stepdelchanged = true;
     } else if (prc > del4prc && prc <= del2prc && stepdel != 2) {
       stepdel = 2;
-    } else if (prc > del2prc && prc <= del1prc && stepdel != 1) {
+      stepdelchanged = true;
+    } else if (prc > del2prc && stepdel != 1) {
       stepdel = 1;
+      stepdelchanged = true;
     }
   } else {
     prc = (curstep - half) / half * 100;
-    //if (prc > )
+    if (prc <= 100 - del1prc && stepdel != 1) {
+      stepdel = 1;
+      stepdelchanged = true;
+    } else if (prc > 100 - del2prc && prc <= 100 - del4prc && stepdel != 2) {
+      stepdel = 2;
+      stepdelchanged = true;
+    } else if (prc > 100 - del4prc && prc <= 100 - del8prc && stepdel != 4) {
+      stepdel = 4;
+      stepdelchanged = true;
+    } else if (prc > 100 - del8prc && stepdel != 8) {
+      stepdel = 8;
+      stepdelchanged = true;
+    }
+  }
+  
+  if (stepdelchanged) {
+    setStepDel();
   }
 }
 
@@ -162,23 +199,12 @@ void moveCurtains() {
   }
 
   if (dynamicstepsize) {
-    if ((!del1prc &&) ) {
+    if ((!del1prc && !del2prc && !del4prc && !del8prc) ||
+		del1prc > 100 || del1prc < 0 || del1prc < del2prc || del2prc < del4prc || del4prc < del8prc) {
       setDynamicStepDefault();
     }
   } else {
-    if (stepdel == 2) {
-      digitalWrite(MS1, HIGH);
-      digitalWrite(MS2, LOW);
-    } else if (stepdel == 4) {
-      digitalWrite(MS1, LOW);
-      digitalWrite(MS2, HIGH);
-    } else if (stepdel == 8) {
-      digitalWrite(MS1, HIGH);
-      digitalWrite(MS2, HIGH);
-    } else {
-      digitalWrite(MS1, LOW);
-      digitalWrite(MS2, LOW);
-    }
+    setStepDel();
   }
 
   if (stepper.distanceToGo() != 0) {
@@ -369,7 +395,7 @@ void loop() {
     stepperCallback();
   }
   if (dynamicstepsize) {
-
+    dynamicStepLoop();
   }
   stepper.run();
 }
