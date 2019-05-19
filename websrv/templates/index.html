@@ -39,27 +39,26 @@
  <div id="sideNav" class="sidenav">
   <span href="javascript:void(0)" class="close" onclick="document.getElementById('sideNav').classList.toggle('open');">&times;</span>
   <div class="in"></div>
-  <a href="#light">Освещение</a>
+  <a href="#curtain">Шторы</a>
   <a href="#rgb">RGB</a>
  </div>
  <div class="sideopen warning"><a onclick="document.getElementById('sideNav').classList.toggle('open');">&equiv;</a></div>
  <ul class="nav fix warning" id="topNav">
   <li><a href="/" class="brand">Smarthome</a></li>
-  <li><a href="#light">Освещение</a></li>
+  <li><a href="#curtain">Шторы</a></li>
   <li><a href="#rgb">RGB</a></li>
   <!-- <li class="-exit"><a href="#" id="btn_exit" onclick="logout()">Exit</a></li> -->
   <li class="-icon"><a href="#" onclick="document.getElementById('topNav').classList.toggle('res');">&equiv;</a></li>
  </ul>
- 
-    <a name="light"><br/><br/></a>
-    <h1>Освещение</h1>
+    <a name="curtain"><br/><br/></a>
+    <h1>Шторы</h1>
     <div class="row">
      <div class="s12 m4">
       <div class="group purple">
-          <input type="radio" name="light/lobby" value="1" onchange="mqttpub(this.name,this.value)" id="on">
-       <label for="on">ВКЛ</label>
-       <input type="radio" name="light/lobby" value="0" onchange="mqttpub(this.name,this.value)" id="off">
-       <label for="off">ВЫКЛ</label><span>Зал:</span>
+          <input type="radio" name="curtain/hall" value="1" onchange="processButton(this)" id="curtainhallclose" data-command="curtain">
+       <label for="curtainhallclose">Закрыть</label>
+       <input type="radio" name="curtain/hall" value="0" onchange="processButton(this)" id="curtainhallopen" data-command="curtain">
+       <label for="curtainhallopen">Открыть</label><span>Зал:</span>
       </div>
      </div>
     </div>
@@ -129,13 +128,27 @@
                 console.log('Ошибка ' + e.name + ":" + e.message + "\n" + e.stack);
              }
          })
+         
+         $("input[type=radio]").each(function(index){
+             try {
+                if (this.value === "1") {
+                  this.checked = config[this.name][this.dataset.command];
+                } else {
+                  this.checked = !config[this.name][this.dataset.command];
+                }
+             } catch (e) {
+                console.log('Ошибка ' + e.name + ":" + e.message + "\n" + e.stack);
+             }
+         })
 
          if (config["rgb/kitchen"].gradient == 1) {
             $("#rgbkitchengradientblock").slideToggle('slow');
          }
+         
      }
 
      function mqttpub(topic, msg) {
+         console.log("topic="+topic+" msg="+msg);
          $.getJSON('/mqttpub', {
 	         topic: topic,
              msg: msg
@@ -190,6 +203,12 @@
         var fromcolor = getJsonColor($("#fromcolor")[0]);
         var tocolor = getJsonColor($("#tocolor")[0]);
         mqttpub(obj.name, JSON.stringify($.extend(json, fromcolor, tocolor)));
+     }
+     
+     function processButton(obj) {
+        var json = {}
+        json[obj.dataset.command] = (obj.value === "1");
+        mqttpub(obj.name, JSON.stringify(json));
      }
      
      setDefaults(config);

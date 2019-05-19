@@ -1,1 +1,1 @@
-{"light/lobby": "1", "light/all": "0", "light/hall": "1"}
+{"light/lobby": "0", "curtain/hall": {"curtain":true}, "light/all": "0", "light/hall": "1", "rgb/kitchen": {"power": 1, "tocolor": {"r": 1023, "g": 1023, "b": 1023}, "detectmove": 1, "delaymove": 60000000, "gradtime": 3000, "gradsteps": 100, "json": {"gradient": 1, "gradtime": 1000, "gradsteps": 100}, "clrjson": {"power": 1, "fromcolor": {"r": 0, "g": 0, "b": 0}}, "gradient": 0, "fromcolor": {"r": 1023, "g": 0, "b": 0}, "gradloop": 1}}
