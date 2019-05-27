@@ -55,9 +55,9 @@
     <div class="row">
      <div class="s12 m4">
       <div class="group purple">
-          <input type="radio" name="curtain/hall" value="1" onchange="processButton(this)" id="curtainhallclose" data-command="curtain">
+          <input type="radio" name="curtain/hall" value="1" onchange="processCurtain(this)" id="curtainhallclose" data-command="curtain" data-steps="20300">
        <label for="curtainhallclose">Закрыть</label>
-       <input type="radio" name="curtain/hall" value="0" onchange="processButton(this)" id="curtainhallopen" data-command="curtain">
+       <input type="radio" name="curtain/hall" value="0" onchange="processCurtain(this)" id="curtainhallopen" data-command="curtain" data-steps="20000">
        <label for="curtainhallopen">Открыть</label><span>Зал:</span>
       </div>
      </div>
@@ -205,9 +205,10 @@
         mqttpub(obj.name, JSON.stringify($.extend(json, fromcolor, tocolor)));
      }
      
-     function processButton(obj) {
+     function processCurtain(obj) {
         var json = {}
         json[obj.dataset.command] = (obj.value === "1");
+        json["stepmoveto"] = parseInt(obj.dataset.steps);
         mqttpub(obj.name, JSON.stringify(json));
      }
      
