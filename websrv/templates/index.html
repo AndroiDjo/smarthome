@@ -55,12 +55,71 @@
     <div class="row">
      <div class="s12 m4">
       <div class="group purple">
-          <input type="radio" name="curtain/hall" value="1" onchange="processCurtain(this)" id="curtainhallclose" data-command="curtain" data-steps="20300">
+          <input type="radio" name="curtain/hall" value="1" onchange="processCurtain(this)" id="curtainhallclose" data-command="curtain" data-steps="19300" />
        <label for="curtainhallclose">Закрыть</label>
-       <input type="radio" name="curtain/hall" value="0" onchange="processCurtain(this)" id="curtainhallopen" data-command="curtain" data-steps="20000">
-       <label for="curtainhallopen">Открыть</label><span>Зал:</span>
+       <input type="radio" name="curtain/hall" value="0" onchange="processCurtain(this)" id="curtainhallopen" data-command="curtain" data-steps="19000" />
+       <label for="curtainhallopen">Открыть</label><span><b>Зал:</b></span>
       </div>
      </div>
+    </div>
+    
+    <div class="s12 m4 group">
+        <input type="checkbox" class="checkbox" name="curtain/hall" id="curtainhallcloseschedule" onchange="processCurtainScheduler(this)" data-switch="#curtainhallcloseschedule"
+        data-time="#curtainhallclosescheduletime" data-showblock="#curtainhallclosescheduleblock" data-parent="curtainhallclose" data-tag="curtainhallcloseschedule" />
+        <label for="curtainhallcloseschedule">Закрывать по расписанию</label>
+    </div>
+    <div id="curtainhallclosescheduleblock" style="display: none;">
+        <div class="group">
+            <input type="time" name="curtain/hall" id="curtainhallclosescheduletime" onchange="processCurtainScheduler(this)" data-switch="#curtainhallcloseschedule"
+            data-time="#curtainhallclosescheduletime" data-parent="curtainhallclose" data-tag="curtainhallcloseschedule" />
+        </div>
+    </div>
+    
+    <div class="s12 m4 group">
+        <input type="checkbox" class="checkbox" name="curtain/hall" id="curtainhallopenschedule" onchange="processCurtainScheduler(this)" data-switch="#curtainhallopenschedule"
+        data-time="#curtainhallopenscheduletime" data-showblock="#curtainhallopenscheduleblock" data-parent="curtainhallopen" data-tag="curtainhallopenschedule" />
+        <label for="curtainhallopenschedule">Открывать по расписанию</label>
+    </div>
+    <div id="curtainhallopenscheduleblock" style="display: none;">
+        <div class="group">
+            <input type="time" name="curtain/hall" id="curtainhallopenscheduletime" onchange="processCurtainScheduler(this)" data-switch="#curtainhallopenschedule"
+            data-time="#curtainhallopenscheduletime" data-parent="curtainhallopen" data-tag="curtainhallopenschedule" />
+        </div>
+    </div>
+    
+    <div class="row">
+     <div class="s12 m4">
+      <div class="group purple">
+          <input type="radio" name="curtain/childroom" value="1" onchange="processCurtain(this)" id="curtainchildclose" data-command="curtain" data-steps="20900" />
+       <label for="curtainchildclose">Закрыть</label>
+       <input type="radio" name="curtain/childroom" value="0" onchange="processCurtain(this)" id="curtainchildopen" data-command="curtain" data-steps="20000" />
+       <label for="curtainchildopen">Открыть</label><span><b>Детская:</b></span>
+      </div>
+     </div>
+    </div>
+    
+    <div class="s12 m4 group">
+        <input type="checkbox" class="checkbox" name="curtain/childroom" id="curtainchildcloseschedule" onchange="processCurtainScheduler(this)" data-switch="#curtainchildcloseschedule"
+        data-time="#curtainchildclosescheduletime" data-showblock="#curtainchildclosescheduleblock" data-parent="curtainchildclose" data-tag="curtainchildcloseschedule" />
+        <label for="curtainchildcloseschedule">Закрывать по расписанию</label>
+    </div>
+    <div id="curtainchildclosescheduleblock" style="display: none;">
+        <div class="group">
+            <input type="time" name="curtain/childroom" id="curtainchildclosescheduletime" onchange="processCurtainScheduler(this)" data-switch="#curtainchildcloseschedule"
+            data-time="#curtainchildclosescheduletime" data-parent="curtainchildclose" data-tag="curtainchildcloseschedule" />
+        </div>
+    </div>
+    
+    <div class="s12 m4 group">
+        <input type="checkbox" class="checkbox" name="curtain/childroom" id="curtainchildopenschedule" onchange="processCurtainScheduler(this)" data-switch="#curtainchildopenschedule"
+        data-time="#curtainchildopenscheduletime" data-showblock="#curtainchildopenscheduleblock" data-parent="curtainchildopen" data-tag="curtainchildopenschedule" />
+        <label for="curtainchildopenschedule">Открывать по расписанию</label>
+    </div>
+    <div id="curtainchildopenscheduleblock" style="display: none;">
+        <div class="group">
+            <input type="time" name="curtain/childroom" id="curtainchildopenscheduletime" onchange="processCurtainScheduler(this)" data-switch="#curtainchildopenschedule"
+            data-time="#curtainchildopenscheduletime" data-parent="curtainchildopen" data-tag="curtainchildopenschedule" />
+        </div>
     </div>
     
     <a name="rgb"><br/><br/></a>
@@ -79,15 +138,15 @@
     </div>
     <div id="rgbkitchengradientblock" style="display: none;">
         <div class="group">
-            <input type="color" id="fromcolor" name="rgb/kitchen" onchange="processGradient(this)">
+            <input type="color" id="fromcolor" name="rgb/kitchen" onchange="processGradient(this)" />
             <label for="fromcolor">с цвета</label>
         </div>
         <div class="group">
-            <input type="number" name="rgb/kitchen" id="gradtime" data-multiplier="1" required=" " min="10" value="" onchange="processGradient(this)">
+            <input type="number" name="rgb/kitchen" id="gradtime" data-multiplier="1" required=" " min="10" value="" onchange="processGradient(this)" />
             <label for="gradtime">Время градиента, мс</label>
         </div>
         <div class="group">
-            <input type="number" name="rgb/kitchen" id="gradsteps" data-multiplier="1" required=" " min="1" value="" onchange="processGradient(this)">
+            <input type="number" name="rgb/kitchen" id="gradsteps" data-multiplier="1" required=" " min="1" value="" onchange="processGradient(this)" />
             <label for="gradsteps">Количество шагов градиента</label>
         </div> 
     </div>
@@ -96,7 +155,7 @@
         <label for="detectmove">Датчик движения</label>
     </div> 
     <div class="group">
-        <input type="number" name="rgb/kitchen" id="delaymove" data-multiplier="60000000" required=" " min="0" max="255" value="" onchange="editInput(this)">
+        <input type="number" name="rgb/kitchen" id="delaymove" data-multiplier="60000000" required=" " min="0" max="255" value="" onchange="editInput(this)" />
         <label for="delaymove">Автоотключение, мин.</label>
     </div>    
     
@@ -108,6 +167,12 @@
          $("input[type=checkbox]").each(function(index){
              try {
                 this.checked = (config[this.name][this.id] == 1);
+                if (this.checked) {
+                    var showblock = this.dataset.showblock;
+                    if (showblock) {
+                        $(showblock).slideToggle('slow');
+                    }
+                }
              } catch (e) {
                 console.log('Ошибка ' + e.name + ":" + e.message + "\n" + e.stack);
              }
@@ -124,6 +189,14 @@
          $("input[type=number]").each(function(index){
              try {
                 this.value = parseInt(config[this.name][this.id]) / parseInt(this.dataset.multiplier);
+             } catch (e) {
+                console.log('Ошибка ' + e.name + ":" + e.message + "\n" + e.stack);
+             }
+         })
+         
+         $("input[type=time]").each(function(index){
+             try {
+                this.value = config[this.name][this.id];
              } catch (e) {
                 console.log('Ошибка ' + e.name + ":" + e.message + "\n" + e.stack);
              }
@@ -152,6 +225,19 @@
          $.getJSON('/mqttpub', {
 	         topic: topic,
              msg: msg
+	     });
+     }
+     
+     function addTask(tag, msg) {
+         $.getJSON('/addtask', {
+             tag: tag,
+             msg: msg
+	     });
+     }
+     
+     function delTask(tag) {
+         $.getJSON('/deltask', {
+             tag: tag
 	     });
      }
      
@@ -196,7 +282,7 @@
      }
      
      function processGradient(obj) {
-        if (obj.id == "gradient") {
+        if (obj.id === "gradient") {
             $("#rgbkitchengradientblock").slideToggle('slow');
         }
         var json = {gradient:($("#gradient").is(":checked") ? 1 : 0), gradtime:parseInt($("#gradtime").prop("value")), gradsteps:parseInt($("#gradsteps").prop("value")), gradloop:1};
@@ -205,11 +291,41 @@
         mqttpub(obj.name, JSON.stringify($.extend(json, fromcolor, tocolor)));
      }
      
-     function processCurtain(obj) {
+     function getCurtainCommand(id) {
+        var obj = $("#"+id)
         var json = {}
-        json[obj.dataset.command] = (obj.value === "1");
-        json["stepmoveto"] = parseInt(obj.dataset.steps);
-        mqttpub(obj.name, JSON.stringify(json));
+        json[obj.attr("data-command")] = (obj.attr("value") === "1");
+        json["stepmoveto"] = parseInt(obj.attr("data-steps"));
+        return JSON.stringify(json);
+     }
+     
+     function processCurtain(obj) {
+        mqttpub(obj.name, getCurtainCommand(obj.id));
+     }
+     
+     function processCurtainScheduler(obj) {
+        if (obj.type === "checkbox") {
+            $(obj.dataset.showblock).slideToggle('slow');
+            var cbjson = {};
+            cbjson[obj.id] = obj.checked;
+            mqttpub(obj.name, JSON.stringify(cbjson));
+        }
+        if (obj.type === "time") {
+            var tjson = {};
+            tjson[obj.id] = obj.value;
+            mqttpub(obj.name, JSON.stringify(tjson));
+        }
+        var switcher = $(obj.dataset.switch);
+        if (switcher.prop("checked")) {
+            var timeinput = $(obj.dataset.time);
+            var timeval = timeinput.prop("value");
+            if (timeval) {
+                var sjson = {type:"daily", time:timeval, topic:obj.name, msg:getCurtainCommand(obj.dataset.parent)};
+                addTask(obj.dataset.tag, JSON.stringify(sjson));
+            }
+        } else {
+            delTask(obj.dataset.tag);
+        }
      }
      
      setDefaults(config);
