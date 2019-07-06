@@ -4,7 +4,7 @@
  <meta charset="UTF-8">
  <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1.0">
  <title>Smarthome</title>
- <link rel="stylesheet" href="../static/iot.min.css" />
+ <link rel="stylesheet" href="../static/iot.min.css"/>
  <link rel="shortcut icon" href="#" />
  <script src="../static/jquery-3.3.1.min.js"></script>
  <script src="../static/jscolor.js"></script>
@@ -41,12 +41,14 @@
   <div class="in"></div>
   <a href="#curtain">Шторы</a>
   <a href="#rgb">RGB</a>
+  <a href="#aschedule">Расписание</a>
  </div>
  <div class="sideopen warning"><a onclick="document.getElementById('sideNav').classList.toggle('open');">&equiv;</a></div>
  <ul class="nav fix warning" id="topNav">
   <li><a href="/" class="brand">Smarthome</a></li>
   <li><a href="#curtain">Шторы</a></li>
   <li><a href="#rgb">RGB</a></li>
+  <li><a href="#aschedule">Расписание</a></li>
   <!-- <li class="-exit"><a href="#" id="btn_exit" onclick="logout()">Exit</a></li> -->
   <li class="-icon"><a href="#" onclick="document.getElementById('topNav').classList.toggle('res');">&equiv;</a></li>
  </ul>
@@ -63,30 +65,6 @@
      </div>
     </div>
     
-    <div class="s12 m4 group">
-        <input type="checkbox" class="checkbox" name="curtain/hall" id="curtainhallcloseschedule" onchange="processCurtainScheduler(this)" data-switch="#curtainhallcloseschedule"
-        data-time="#curtainhallclosescheduletime" data-showblock="#curtainhallclosescheduleblock" data-parent="curtainhallclose" data-tag="curtainhallcloseschedule" />
-        <label for="curtainhallcloseschedule">Закрывать по расписанию</label>
-    </div>
-    <div id="curtainhallclosescheduleblock" style="display: none;">
-        <div class="group">
-            <input type="time" name="curtain/hall" id="curtainhallclosescheduletime" onchange="processCurtainScheduler(this)" data-switch="#curtainhallcloseschedule"
-            data-time="#curtainhallclosescheduletime" data-parent="curtainhallclose" data-tag="curtainhallcloseschedule" />
-        </div>
-    </div>
-    
-    <div class="s12 m4 group">
-        <input type="checkbox" class="checkbox" name="curtain/hall" id="curtainhallopenschedule" onchange="processCurtainScheduler(this)" data-switch="#curtainhallopenschedule"
-        data-time="#curtainhallopenscheduletime" data-showblock="#curtainhallopenscheduleblock" data-parent="curtainhallopen" data-tag="curtainhallopenschedule" />
-        <label for="curtainhallopenschedule">Открывать по расписанию</label>
-    </div>
-    <div id="curtainhallopenscheduleblock" style="display: none;">
-        <div class="group">
-            <input type="time" name="curtain/hall" id="curtainhallopenscheduletime" onchange="processCurtainScheduler(this)" data-switch="#curtainhallopenschedule"
-            data-time="#curtainhallopenscheduletime" data-parent="curtainhallopen" data-tag="curtainhallopenschedule" />
-        </div>
-    </div>
-    
     <div class="row">
      <div class="s12 m4">
       <div class="group purple">
@@ -96,30 +74,6 @@
        <label for="curtainchildopen">Открыть</label><span><b>Детская:</b></span>
       </div>
      </div>
-    </div>
-    
-    <div class="s12 m4 group">
-        <input type="checkbox" class="checkbox" name="curtain/childroom" id="curtainchildcloseschedule" onchange="processCurtainScheduler(this)" data-switch="#curtainchildcloseschedule"
-        data-time="#curtainchildclosescheduletime" data-showblock="#curtainchildclosescheduleblock" data-parent="curtainchildclose" data-tag="curtainchildcloseschedule" />
-        <label for="curtainchildcloseschedule">Закрывать по расписанию</label>
-    </div>
-    <div id="curtainchildclosescheduleblock" style="display: none;">
-        <div class="group">
-            <input type="time" name="curtain/childroom" id="curtainchildclosescheduletime" onchange="processCurtainScheduler(this)" data-switch="#curtainchildcloseschedule"
-            data-time="#curtainchildclosescheduletime" data-parent="curtainchildclose" data-tag="curtainchildcloseschedule" />
-        </div>
-    </div>
-    
-    <div class="s12 m4 group">
-        <input type="checkbox" class="checkbox" name="curtain/childroom" id="curtainchildopenschedule" onchange="processCurtainScheduler(this)" data-switch="#curtainchildopenschedule"
-        data-time="#curtainchildopenscheduletime" data-showblock="#curtainchildopenscheduleblock" data-parent="curtainchildopen" data-tag="curtainchildopenschedule" />
-        <label for="curtainchildopenschedule">Открывать по расписанию</label>
-    </div>
-    <div id="curtainchildopenscheduleblock" style="display: none;">
-        <div class="group">
-            <input type="time" name="curtain/childroom" id="curtainchildopenscheduletime" onchange="processCurtainScheduler(this)" data-switch="#curtainchildopenschedule"
-            data-time="#curtainchildopenscheduletime" data-parent="curtainchildopen" data-tag="curtainchildopenschedule" />
-        </div>
     </div>
     
     <a name="rgb"><br/><br/></a>
@@ -157,11 +111,29 @@
     <div class="group">
         <input type="number" name="rgb/kitchen" id="delaymove" data-multiplier="60000000" required=" " min="0" max="255" value="" onchange="editInput(this)" />
         <label for="delaymove">Автоотключение, мин.</label>
-    </div>    
+    </div>
+    
+    <a name="aschedule"><br/><br/></a>
+    <h1>Расписание</h1>
+    <table id="scheduleTable"></table>
     
     <div id="configs" hidden>{{config}}</div> 
+    <div id="schedule" hidden>{{schedule}}</div>
     <script>     
+     /*************CONSTANT*BEGIN***********/
+     var dictSchedulePeriod = {daily:"Ежедневно",workday:"Рабочие дни",weekend:"Выходные дни"};
+     var dictCommands = {'curtain/hall':{'name':'Шторы зал','commands':[{'name':'Закрыть шторы','command':'{"curtain":true,"stepmoveto":19300}','tag':'curtainhallcloseschedule'},{'name':'Открыть шторы','command':'{"curtain":false,"stepmoveto":19000}','tag':'curtainhallopenschedule'}]},'curtain/childroom':{'name':'Шторы детская','commands':[{'name':'Закрыть шторы','command':'{"curtain":true,"stepmoveto":20900}','tag':'curtainchildcloseschedule'},{'name':'Открыть шторы','command':'{"curtain":false,"stepmoveto":20000}','tag':'curtainchildopenschedule'}]}};
+     var cmdContainerId = 'tdCommandContainer';
+     var tdCommandId = 'tdCommandId';
+     var tdSelectTopicId = 'tdSelectTopicId';
+     var strDivider = '$div$';
+     var loaderId = '#loader';
+     var scheduleTableId = '#scheduleTable';
+     var tdSelectPeriodId = 'tdSelectPeriodId';
+     /*************CONSTANT*END*************/
+     
      var config = JSON.parse($("#configs").text());
+     var scheduleJson = JSON.parse($("#schedule").text());
      
      function setDefaults(config){
          $("input[type=checkbox]").each(function(index){
@@ -213,6 +185,10 @@
                 console.log('Ошибка ' + e.name + ":" + e.message + "\n" + e.stack);
              }
          })
+         
+         $("#sideNav").find("a").click(function(){
+            $("#sideNav").removeClass("open");
+         });
 
          if (config["rgb/kitchen"].gradient == 1) {
             $("#rgbkitchengradientblock").slideToggle('slow');
@@ -221,24 +197,36 @@
      }
 
      function mqttpub(topic, msg) {
-         console.log("topic="+topic+" msg="+msg);
+         $(loaderId).removeClass('hide');
          $.getJSON('/mqttpub', {
 	         topic: topic,
              msg: msg
-	     });
+	     }, function(resp) {
+            $(loaderId).addClass('hide');
+         });
      }
      
      function addTask(tag, msg) {
-         $.getJSON('/addtask', {
+         $(loaderId).removeClass('hide');
+         $.getJSON('/addtask',{
              tag: tag,
-             msg: msg
-	     });
+             msg: JSON.stringify(msg)
+	     }, function(resp) {
+            scheduleJson[tag] = msg;
+            buildHtmlTable(scheduleTableId, scheduleJson);
+            $(loaderId).addClass('hide');
+         }); 
      }
      
      function delTask(tag) {
+         $(loaderId).removeClass('hide');
          $.getJSON('/deltask', {
              tag: tag
-	     });
+	     }, function(resp) {
+            delete scheduleJson[tag];
+            buildHtmlTable(scheduleTableId, scheduleJson);
+            $(loaderId).addClass('hide');
+         });
      }
      
      function switchCheckBox(obj) {
@@ -302,33 +290,103 @@
      function processCurtain(obj) {
         mqttpub(obj.name, getCurtainCommand(obj.id));
      }
-     
-     function processCurtainScheduler(obj) {
-        if (obj.type === "checkbox") {
-            $(obj.dataset.showblock).slideToggle('slow');
-            var cbjson = {};
-            cbjson[obj.id] = obj.checked;
-            mqttpub(obj.name, JSON.stringify(cbjson));
-        }
-        if (obj.type === "time") {
-            var tjson = {};
-            tjson[obj.id] = obj.value;
-            mqttpub(obj.name, JSON.stringify(tjson));
-        }
-        var switcher = $(obj.dataset.switch);
-        if (switcher.prop("checked")) {
-            var timeinput = $(obj.dataset.time);
-            var timeval = timeinput.prop("value");
-            if (timeval) {
-                var sjson = {type:"daily", time:timeval, topic:obj.name, msg:getCurtainCommand(obj.dataset.parent)};
-                addTask(obj.dataset.tag, JSON.stringify(sjson));
-            }
-        } else {
-            delTask(obj.dataset.tag);
-        }
+
+     function buildCommandSelect(container, topic) {
+       $(container).empty();
+       var commandSelect = $('<select/>', {id:tdCommandId});
+       var commandList = dictCommands[topic].commands;
+       for (var i = 0; i < commandList.length; i++) {
+           commandSelect.append($('<option/>', {value:$("#"+tdSelectPeriodId+" :selected").val()+commandList[i].tag+strDivider+commandList[i].command}).html(commandList[i].name));
+       }
+       $(container).append(commandSelect);
      }
      
-     setDefaults(config);
+     function buildHtmlTable(selector, json) {
+       $(selector).empty();
+       // заголовки
+       var headerTr$ = $('<tr/>');
+       headerTr$.append($('<th/>').html("Периодичность"));
+       headerTr$.append($('<th/>').html("Время"));
+       headerTr$.append($('<th/>').html("Название"));
+       headerTr$.append($('<th/>').html("Устройство"));
+       headerTr$.append($('<th/>').html("Команда"));
+       headerTr$.append($('<th/>').html(""));
+       $(selector).append(headerTr$);
+
+        // даннтые таблицы
+       for (var keytag in json) {
+         var row$ = $('<tr/>');
+         row$.append($('<td/>').html(dictSchedulePeriod[json[keytag].type])); //Периодичность
+         row$.append($('<td/>').html(json[keytag].time)); //Время
+         row$.append($('<td/>').html(json[keytag].name)); //Название
+         row$.append($('<td/>').html(json[keytag].topicname)); //Устройство
+         row$.append($('<td/>').html(json[keytag].commandname)); //Команда
+         var closeBtn = $('<button/>',
+         {
+            text: '-',
+            click: function () { 
+                        delTask(keytag);
+                        buildHtmlTable(selector, scheduleJson);
+                   },
+            class: 'info round small'
+         });
+         row$.append($('<td/>').html(closeBtn));
+         $(selector).append(row$);
+       }
+       
+       // поля ввода
+       var rowInput$ = $('<tr/>');
+       var periodSelect = $('<select/>',{id:tdSelectPeriodId});
+       for (var keyp in dictSchedulePeriod) {
+           periodSelect.append($('<option/>', {value:keyp}).html(dictSchedulePeriod[keyp]));
+       }
+       periodSelect.change(function(){
+            buildCommandSelect("#"+cmdContainerId, $("#"+tdSelectTopicId+" :selected").val());
+       });
+       rowInput$.append($('<td/>').html(periodSelect));
+       var timeInput = $('<input/>',{type:"time", name:"scheduletimeinput", required:"true"});
+       rowInput$.append($('<td/>').html(timeInput));
+       var nameInput = $('<input/>',{type:"text"});
+       rowInput$.append($('<td/>').html(nameInput));
+       var topicSelect = $('<select/>',{id:tdSelectTopicId});
+       
+       topicSelect.change(function(){
+            buildCommandSelect("#"+cmdContainerId, $("#"+tdSelectTopicId+" :selected").val());
+       });
+       for (var keyc in dictCommands) {
+           topicSelect.append($('<option/>', {value:keyc}).html(dictCommands[keyc].name));
+       }
+       rowInput$.append($('<td/>').html(topicSelect));
+       rowInput$.append($('<td/>',{id:cmdContainerId}));
+       
+       var addBtn = $('<button/>',
+         {
+            text: '+',
+            click: function () {
+                        var inptimeval = timeInput.val();
+                        if (inptimeval) {
+                            var cmdtag = $("#"+tdCommandId+" :selected").val().split(strDivider);
+                            var taskjson = {type:$("#"+tdSelectPeriodId+" :selected").val(),time:inptimeval,topic:$("#"+tdSelectTopicId+" :selected").val(),topicname:$("#"+tdSelectTopicId+" :selected").text(),msg:cmdtag[1],commandname:$("#"+tdCommandId+" :selected").text(),name:nameInput.val()};
+                            addTask(cmdtag[0], taskjson);
+                        } else {
+                            alert("Введите время!");
+                        }
+                   },
+            class: 'info round small'
+         });
+       rowInput$.append($('<td/>').html(addBtn));
+       $(selector).append(rowInput$);
+       buildCommandSelect("#"+cmdContainerId, $("#"+tdSelectTopicId+" :selected").val());
+     }
+
+     jQuery(document).ready(function(){
+        jQuery('.spoiler-text').hide();
+        jQuery('.spoiler').click(function(){
+            jQuery(this).toggleClass("folded").toggleClass("unfolded").next().slideToggle('slow');
+        });
+        setDefaults(config);
+        buildHtmlTable(scheduleTableId, scheduleJson);
+     });
 
     </script>
     

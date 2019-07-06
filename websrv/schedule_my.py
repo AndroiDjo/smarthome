@@ -2,6 +2,7 @@ import schedule
 import time
 import json
 import mqtt_init, conf
+import datetime
 
 def getSchedule():
     with open('schedule.json', 'r') as f:
@@ -33,6 +34,15 @@ def mqttpost(topic, msg):
     mqtt_init.publish(topic, msg)
     conf.update_config(topic, json.loads(msg))
 
+def mqttpostWorkday(topic, msg):
+    weekno = datetime.datetime.today().weekday()
+    if datetime.datetime.today().weekday() < 5:
+        mqttpost(topic, msg)
+        
+def mqttpostWeekend(topic, msg):
+    if datetime.datetime.today().weekday() >= 5:
+        mqttpost(topic, msg)
+
 def processTask(name, value):
     addTask(name, value)
     saveTask(name, value)
@@ -41,6 +51,10 @@ def addTask(tag, schedobj):
     schedule.clear(tag)
     if schedobj['type'] == 'daily':
         schedule.every().day.at(schedobj['time']).do(mqttpost, schedobj['topic'], schedobj['msg']).tag(tag)
+    elif schedobj['type'] == 'workday':
+        schedule.every().day.at(schedobj['time']).do(mqttpostWorkday, schedobj['topic'], schedobj['msg']).tag(tag)
+    elif schedobj['type'] == 'weekend':
+        schedule.every().day.at(schedobj['time']).do(mqttpostWeekend, schedobj['topic'], schedobj['msg']).tag(tag)
 
 def init():
     loadTasks()
