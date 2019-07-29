@@ -1,0 +1,380 @@
+#include <Arduino.h>
+#include "FS.h"
+#include <WiFiManager.h>
+#include <ESP8266WiFi.h>
+#include <ArduinoOTA.h>
+#include <ArduinoJson.h>
+#include <Adafruit_Sensor.h>
+#include <DHT.h>
+#include <DHT_U.h>
+#include <IRremoteESP8266.h>
+#include <IRsend.h>
+#include <PubSubClient.h>
+
+#define DHTPIN 12     // Digital pin connected to the DHT sensor 
+#define DHTTYPE    DHT11     // DHT 11
+DHT_Unified dht(DHTPIN, DHTTYPE);
+uint32_t delayMS;
+
+int soundSensor = 14;
+int led = 2;
+int clap = 0;
+long detection_range_start = 0;
+long detection_range = 0;
+boolean status_lights = false;
+const int jsonSize = 1024; // размер буфера для парсинга json
+bool power = true; // переменная отвечает за отключение/включение светильника
+bool clapSensor = true; // переключение реле по хлопку
+int delayCounter = 0;
+int delayLimit = 20;
+bool tempSensorCallback = false; // колбэк для публикации данных с датчика температуры
+bool saveSettingsCallback = false; // колбэк для сохранения настроек
+const char* clientName = "nodemcu_lightcloud"; // название MQTT клиента
+int relayPin = 4;
+const uint16_t kIrLed = 5;  
+
+IRsend irsend(kIrLed);  // Set the GPIO to be used to sending the message.
+
+// Example of data captured by IRrecvDumpV2.ino
+uint16_t powerOff[229] = {3132, 3064,  3094, 4560,  576, 1720,  526, 580,  576, 1720,  524, 580,  580, 554,  578, 1718,  552, 1718,  524, 580,  556, 1742,  550, 554,  578, 556,  554, 1742,  526, 1744,  526, 1718,  552,
+580,  552, 578,  554, 578,  554, 580,  554, 580,  554, 576,  554, 580,  576, 556,  554, 580,  578, 554,  554, 580,  552, 578,  578, 554,  554, 578,  552, 580,  578, 554,  556, 576,  556, 578,  554, 578,  554, 580,  554, 580,  552, 580,  556, 576,  552, 580,  558, 576,  552, 580,  552, 580,  554, 1718,  550, 1722,  548, 580,  552, 580,  552, 580,  556, 578,  552, 580,  552, 578,  554, 580,  554, 580,  552, 580,  554, 578,  554, 580,
+ 554, 578,  554, 578,  552, 580,  554, 580,  550, 1722,  546, 582,  550, 582,  554, 580,  560, 572,  552, 580,  554, 578,  576, 556,  554, 578,  554, 580,  578, 554,  554, 578,  558, 576,  552, 580,  554, 578,  552, 580,  552, 580,  578, 556,  554, 578,  554, 580,  556, 578,  554, 578,  552, 578,  554, 580,  554, 578,  556, 578,  552, 578,  554, 578,  582, 552,  552, 580,  556, 578,  554, 578,  552, 580,  554, 578,  556, 578,  552,
+580,  554, 580,  552, 580,  552, 580,  554, 580,  550, 580,  552, 580,  552, 578,  554, 1720,  550, 580,  552, 1718,  550, 1722,  548, 1720,  546, 584,  550, 582,  552, 580,  552, 1720,  544, 1722,  526, 1746,  544};
+
+uint16_t powerOn25[229] = {3072, 3126,  3066, 4590,  552, 1724,  548, 586,  528, 1744,  550, 588,  528, 606,  548, 1748,  524, 1748,  522, 588,  528, 1770,  524, 586,  548, 586,  550, 1722,  548, 1750,  524, 1748,  502,
+608,  552, 586,  548, 586,  528, 606,  550, 586,  528, 608,  550, 586,  526, 608,  526, 608,  550, 586,  550, 584,  550, 588,  528, 606,  550, 586,  550, 586,  552, 586,  548, 588,  548, 586,  528, 610,  526, 1744,  528, 606,  528, 608,  528, 606,  550, 588,  526, 608,  528, 606,  550, 584,  530, 1746,  526, 1768,  504, 608,  550, 586,  550, 586,  550, 586,  528, 608,  528, 606,  528, 606,  530, 606,  530, 608,  526, 608,  528, 608,  528, 606,  530, 608,  528, 608,  548, 588,  528, 1746,  526, 606,  530, 604,  530, 608,  528, 606,  528, 608,  528, 606,  530, 606,  528, 606,  530, 606,  528, 606,  530, 608,  528, 606,  530, 606,  530, 606,  528, 606,  530, 606,  530, 606,  530, 606,  528, 606,  530, 606,  530, 606,  530, 608,  528, 606,  530, 608,  528, 608,  530, 606,  530, 606,  528, 606,  530, 606,  530, 606,  530, 606,  530, 606,  530, 606,  532, 604,  530, 606,  530, 606,  530, 606,  528, 606,  530, 606,  530, 606,  530, 604,  530, 606,  528, 1742,  530, 604,  532, 1742,  530, 606,  530, 604,  532, 606,  530, 604,  530, 608,  530, 1742,  530, 1742,  530, 1742,  532};
+
+uint16_t powerOn24[229] = {3100, 3100,  3074, 4582,  556, 1746,  528, 582,  558, 1742,  526, 582,  560, 576,  558, 1740,  530, 1742,  530, 580,  582, 1716,  554, 554,  584, 552,  582, 554,  582, 1716,  528, 1720,  554, 582,  582, 554,  582, 552,  582, 554,  558, 578,  558, 578,  558, 578,  580, 556,  558, 578,  556, 580,  582, 554,  556, 580,  556, 580,  578, 558,  554, 582,  558, 578,  558, 578,  580, 556,  556, 580,  556, 1742,  552, 558,  556, 580,  554, 582,  556, 580,  556, 580,  582, 554,  556, 580,  584, 1716,  550, 1722,  528, 582,  578, 558,  556, 580,  556, 580,  580, 556,  580, 556,  558, 578,  558, 580,  556, 580,  556, 580,  556, 578,
+ 582, 554,  558, 578,  580, 556,  558, 578,  556, 1744,  554, 556,  558, 578,  558, 578,  558, 580,  582, 554,  580, 556,  580, 556,  556, 580,  558, 580,  556, 578,  556, 580,  556, 582,  556, 580,  556, 580,  556, 580,  556, 580,  554, 580,  556, 580,  556, 580,  556, 580,  580, 556,  556, 578,  582, 554,  556, 580,  558, 578,  554, 582,  554, 582,  554, 580,  554, 582,  554, 582,  556, 580,  554, 582,  554, 580,  552, 584,  554,
+582,  554, 582,  554, 580,  556, 582,  554, 582,  554, 582,  552, 584,  552, 582,  556, 1720,  550, 584,  552, 1722,  550, 1724,  526, 1746,  548, 1722,  550, 1748,  526, 584,  552, 1724,  528, 1746,  526, 1746,  526};
+
+uint16_t tempDown24[229] = {3042, 3162,  3064, 4598,  554, 1750,  526, 588,  556, 1746,  526, 586,  556, 584,  556, 1746,  526, 1750,  526, 586,  558, 1744,  526, 586,  558, 584,  556, 588,  556, 1746,  526, 1746,  526, 586,  556, 582,  556, 582,  558, 582,  556, 584,  556, 584,  558, 582,  558, 582,  556, 582,  556, 582,  556, 584,  556, 584,  556, 584,  556, 584,  556, 584,  556, 582,  556, 584,  558, 584,  556, 582,  558, 1746,  526, 586,  556, 584,  556, 584,  556, 584,  556, 584,  556, 584,  558, 582,  558, 1746,  526, 1750,  526, 588,  556, 584,  556, 582,  558, 584,  556, 582,  558, 582,  558, 582,  558, 582,  558, 582,  558, 584,  558, 582,
+ 556, 584,  558, 584,  556, 584,  556, 584,  556, 1746,  526, 586,  558, 580,  556, 580,  556, 580,  556, 582,  556, 584,  556, 582,  558, 584,  556, 582,  558, 584,  556, 582,  558, 582,  556, 584,  556, 584,  558, 582,  558, 582,  556, 584,  556, 584,  556, 584,  556, 584,  556, 582,  556, 584,  556, 584,  556, 584,  558, 582,  556, 584,  558, 582,  558, 584,  556, 584,  556, 582,  558, 582,  556, 582,  556, 582,  556, 584,  558,
+584,  556, 582,  558, 582,  556, 584,  558, 584,  556, 584,  558, 582,  558, 584,  556, 582,  558, 584,  556, 1746,  526, 1750,  526, 1750,  526, 1750,  526, 1750,  526, 584,  558, 580,  556, 1744,  528, 1750,  526};
+
+uint16_t tempUp25[229] = {3072, 3126,  3072, 4584,  554, 1744,  528, 582,  558, 1740,  528, 582,  558, 578,  558, 1740,  528, 1744,  528, 582,  558, 1742,  528, 580,  558, 576,  580, 1718,  528, 1744,  528, 1746,  528,
+580,  558, 576,  558, 578,  558, 576,  558, 578,  558, 576,  558, 578,  584, 552,  558, 578,  558, 580,  578, 554,  560, 574,  560, 576,  558, 578,  558, 576,  558, 576,  582, 552,  560, 576,  560, 576,  560, 1714,  552, 582,  558, 578,  560, 576,  560, 576,  558, 578,  558, 578,  582, 554,  584, 1714,  528, 1722,  550, 580,  558, 578,  558, 578,  558, 576,  558, 578,  582, 552,  582, 552,  558, 578,  558, 578,  558, 578,  558, 576,  560, 576,  558, 578,  580, 554,  558, 576,  558, 1740,  528, 580,  560, 576,  582, 554,  582, 554,  558, 576,  560, 576,  558, 576,  558, 576,  584, 552,  582, 552,  560, 576,  558, 576,  560, 576,  582, 554,  560, 576,  582, 554,  558, 576,  558, 582,  554, 576,  558, 576,  582, 554,  560, 576,  560, 576,  582, 554,  558, 576,  582, 554,  560, 576,  558, 576,  558, 578,  582, 552,  584, 552,  582, 554,  560, 576,  582, 552,  560, 576,  582, 554,  582, 554,  560, 576,  582, 554,  580, 558,  580, 552,  582, 552,  584, 552,  560, 576,  582, 554,  584, 552,  558, 578,  582, 552,  584, 552,  582, 554,  582, 554,  558, 1718,  552, 580,  560};
+
+// учетные данные Mosquitto
+struct Mqtt {
+  char host[20];
+  int port;
+  char login[20];
+  char pass[20];
+};
+
+// учетные данные OTA
+struct Ota {
+  int port;
+  char pass[20];
+};
+
+WiFiClient espClient;
+PubSubClient client(espClient);
+Mqtt mqtt;
+Ota ota;
+const char* privateFile = "/private.json"; // файл для хранения учетных данных
+const char* configFile = "/config.json"; // файл для хранения настроек модуля
+
+void initPrivate() {
+  File file = SPIFFS.open(privateFile, "r");
+  StaticJsonDocument<256> doc;
+  if (!file) {
+    Serial.println("Failed to open private file");
+  } 
+  DeserializationError error = deserializeJson(doc, file);
+  if (error) {
+    file.close();
+    Serial.println("Failed to dsrlz private file");
+  }
+  file.close();
+  strlcpy(mqtt.host, doc["mqtt_server"], sizeof(mqtt.host));
+  strlcpy(mqtt.login, doc["mqtt_login"], sizeof(mqtt.login));
+  strlcpy(mqtt.pass, doc["mqtt_pass"], sizeof(mqtt.pass));
+  mqtt.port = doc["mqtt_port"];
+  strlcpy(ota.pass, doc["ota_pass"], sizeof(ota.pass));
+  ota.port = doc["ota_port"];
+}
+
+void setPower(bool pwr) {
+  power = pwr;
+  if (power) {
+    digitalWrite(relayPin, HIGH); // реле включено
+    digitalWrite(led, HIGH);
+  } else {
+    digitalWrite(relayPin, LOW); // реле выключено
+    digitalWrite(led, LOW);
+  }
+  saveSettingsCallback = true;
+}
+
+void parseRequest(DynamicJsonDocument& doc) {
+  if (doc.containsKey("power")) {
+    setPower(doc["power"]);
+  }
+
+  if (doc.containsKey("clap")) {
+    saveSettingsCallback = true;
+    clapSensor = doc["clap"];
+  }
+
+  if (doc.containsKey("gettemp") || doc.containsKey("getall")) {
+    tempSensorCallback = true;
+  }
+
+  if (doc.containsKey("splon24")) {
+    irsend.sendRaw(powerOn24, 229, 38);
+  } else if (doc.containsKey("splon25")) {
+    irsend.sendRaw(powerOn25, 229, 38);
+  } else if (doc.containsKey("sploff")) {
+    irsend.sendRaw(powerOff, 229, 38);
+  } else if (doc.containsKey("splup")) {
+    irsend.sendRaw(tempUp25, 229, 38);
+  } else if (doc.containsKey("spldown")) {
+    irsend.sendRaw(tempDown24, 229, 38);
+  }
+}
+
+// сохранение параметров в формате json в SPIFFS память
+void saveSettings() {
+   saveSettingsCallback = false;
+   DynamicJsonDocument doc(jsonSize);
+   doc["power"] = power;
+   doc["clap"] = clapSensor;
+   File destFile = SPIFFS.open(configFile, "w");
+   if (serializeJson(doc, destFile) == 0) {
+    destFile.close();
+    Serial.println("Failed to write to config file");
+   }
+   destFile.close();
+}
+
+// загрузка json параметров из SPIFFS
+void loadSettings() {
+  Serial.println("loadSettings");
+   File file = SPIFFS.open(configFile, "r");
+   DynamicJsonDocument doc(jsonSize);
+   if (file) {
+     DeserializationError error = deserializeJson(doc, file);
+     if (error) {
+      file.close();
+      Serial.println("loadJsonParams: Failed to dsrlz config file");
+     }
+     file.close();
+     serializeJsonPretty(doc, Serial);
+     parseRequest(doc);
+   } else {
+     Serial.println("loadJsonParams: config file not found");
+   }
+}
+
+// обработчик MQTT команд
+void callback(char* topic, byte* payload, unsigned int length) {
+  DynamicJsonDocument doc(jsonSize);
+  DeserializationError error = deserializeJson(doc, payload, length);
+  if (error) {
+    Serial.println("Failed to dsrlz mqtt message");
+  }
+  parseRequest(doc);
+}
+
+// переподключение к MQTT брокеру
+void reconnect() {
+  while (!client.connected()) {
+    yield();
+    delay(100);
+    Serial.print("Attempting MQTT connection...");
+    if (client.connect(clientName, mqtt.login, mqtt.pass)) {
+      Serial.print(clientName);
+      Serial.println(" connected");
+      client.subscribe("all/modules");
+      client.subscribe("lightcloud/childroom");
+      client.subscribe("sensor/req");
+    } else {
+      Serial.print("failed, rc=");
+      Serial.print(client.state());
+      Serial.println(" try again in 5 seconds");
+      delay(5000);
+    }
+  }
+}
+
+void getTemp() {
+  tempSensorCallback = false;
+  StaticJsonDocument<256> doc;
+  sensors_event_t event;
+  dht.temperature().getEvent(&event);
+  if (isnan(event.temperature)) {
+    Serial.println(F("Error reading temperature!"));
+  }
+  else {
+    doc[clientName]["temperature"] = event.temperature;
+  }
+  dht.humidity().getEvent(&event);
+  if (isnan(event.relative_humidity)) {
+    Serial.println(F("Error reading humidity!"));
+  }
+  else {
+    doc[clientName]["humidity"] = event.relative_humidity;
+  }
+  
+  char buffer[512];
+  size_t n = serializeJson(doc, buffer);
+  client.publish("sensor/resp", buffer, n);
+  delay(1000);
+}
+
+void clapLoop() {
+  int status_sensor = digitalRead(soundSensor);
+  if (status_sensor == 1)
+  {
+    if (clap == 0)
+    {
+      detection_range_start = detection_range = millis();
+      clap++;
+    }
+    else if (clap > 0 && millis()-detection_range >= 50)
+    {
+      detection_range = millis();
+      clap++;
+    }
+  }
+  if (millis()-detection_range_start >= 400)
+  {
+    if (clap == 2)
+    {
+      if (!status_lights)
+      {
+        status_lights = true;
+        setPower(true);
+      }
+      else if (status_lights)
+      {
+        status_lights = false;
+        setPower(false);
+      }
+    }
+    clap = 0;
+  }
+}
+
+void delayLoop() {
+  delayCounter++;
+  if (delayCounter > delayLimit) {
+    delayCounter = 0;
+    yield();
+    delay(1);
+  }
+}
+
+void setup() {
+  Serial.begin(115200, SERIAL_8N1, SERIAL_TX_ONLY);
+
+  delay(2000);
+  Serial.println("Mounting FS...");
+
+  if (!SPIFFS.begin()) {
+    Serial.println("Failed to mount file system");
+    return;
+  }
+  
+  pinMode(soundSensor, INPUT);
+  pinMode(led,OUTPUT);
+  pinMode(relayPin,OUTPUT);
+  irsend.begin();
+  dht.begin();
+  loadSettings();
+
+  WiFiManager wifiManager;
+  //wifiManager.resetSettings();
+  // Подключение к роутеру. Если не удалось подключиться - перезагружаемся.
+  wifiManager.setConfigPortalTimeout(10);
+  if (!wifiManager.autoConnect("AutoConnectAP", "password123")) {
+    Serial.println("failed to connect and hit timeout");
+    delay(3000);
+    ESP.restart();
+    delay(5000);
+  }
+
+  initPrivate();
+
+  sensor_t sensor;
+  dht.temperature().getSensor(&sensor);
+  Serial.println(F("------------------------------------"));
+  Serial.println(F("Temperature Sensor"));
+  Serial.print  (F("Sensor Type: ")); Serial.println(sensor.name);
+  Serial.print  (F("Driver Ver:  ")); Serial.println(sensor.version);
+  Serial.print  (F("Unique ID:   ")); Serial.println(sensor.sensor_id);
+  Serial.print  (F("Max Value:   ")); Serial.print(sensor.max_value); Serial.println(F("°C"));
+  Serial.print  (F("Min Value:   ")); Serial.print(sensor.min_value); Serial.println(F("°C"));
+  Serial.print  (F("Resolution:  ")); Serial.print(sensor.resolution); Serial.println(F("°C"));
+  Serial.println(F("------------------------------------"));
+  // Print humidity sensor details.
+  dht.humidity().getSensor(&sensor);
+  Serial.println(F("Humidity Sensor"));
+  Serial.print  (F("Sensor Type: ")); Serial.println(sensor.name);
+  Serial.print  (F("Driver Ver:  ")); Serial.println(sensor.version);
+  Serial.print  (F("Unique ID:   ")); Serial.println(sensor.sensor_id);
+  Serial.print  (F("Max Value:   ")); Serial.print(sensor.max_value); Serial.println(F("%"));
+  Serial.print  (F("Min Value:   ")); Serial.print(sensor.min_value); Serial.println(F("%"));
+  Serial.print  (F("Resolution:  ")); Serial.print(sensor.resolution); Serial.println(F("%"));
+  Serial.println(F("------------------------------------"));
+  // Set delay between sensor readings based on sensor details.
+  delayMS = sensor.min_delay / 1000;
+
+  // инициализация обновления по воздуху
+  ArduinoOTA.setPort(ota.port);
+  ArduinoOTA.setPassword(ota.pass);
+  ArduinoOTA.onStart([]() {
+    String type;
+    if (ArduinoOTA.getCommand() == U_FLASH) {
+      type = "sketch";
+    } else {
+      type = "filesystem";
+    }
+
+    Serial.println("Start updating " + type);
+  });
+  ArduinoOTA.onEnd([]() {
+    Serial.println("\nEnd");
+  });
+  ArduinoOTA.onProgress([](unsigned int progress, unsigned int total) {
+    Serial.printf("Progress: %u%%\r", (progress / (total / 100)));
+  });
+  ArduinoOTA.onError([](ota_error_t error) {
+    Serial.printf("Error[%u]: ", error);
+    if (error == OTA_AUTH_ERROR) {
+      Serial.println("Auth Failed");
+    } else if (error == OTA_BEGIN_ERROR) {
+      Serial.println("Begin Failed");
+    } else if (error == OTA_CONNECT_ERROR) {
+      Serial.println("Connect Failed");
+    } else if (error == OTA_RECEIVE_ERROR) {
+      Serial.println("Receive Failed");
+    } else if (error == OTA_END_ERROR) {
+      Serial.println("End Failed");
+    }
+  });
+  ArduinoOTA.begin();
+
+  // инициализация MQTT брокера
+  client.setServer(mqtt.host, mqtt.port);
+  client.setCallback(callback);
+  if (!client.connected()) {
+    reconnect();
+  }
+}
+
+void loop() {
+  ArduinoOTA.handle();
+  if (!client.connected())
+    reconnect();
+  client.loop();
+  if (saveSettingsCallback)
+    saveSettings();
+  if (clapSensor)
+    clapLoop();
+  if (tempSensorCallback)
+    getTemp();
+  delayLoop();
+}
