@@ -40,6 +40,7 @@
   <span href="javascript:void(0)" class="close" onclick="document.getElementById('sideNav').classList.toggle('open');">&times;</span>
   <div class="in"></div>
   <a href="#curtain">Шторы</a>
+  <a href="#light">Свет</a>
   <a href="#rgb">RGB</a>
   <a href="#aschedule">Расписание</a>
  </div>
@@ -47,6 +48,7 @@
  <ul class="nav fix warning" id="topNav">
   <li><a href="/" class="brand">Smarthome</a></li>
   <li><a href="#curtain">Шторы</a></li>
+  <li><a href="#light">Свет</a></li>
   <li><a href="#rgb">RGB</a></li>
   <li><a href="#aschedule">Расписание</a></li>
   <!-- <li class="-exit"><a href="#" id="btn_exit" onclick="logout()">Exit</a></li> -->
@@ -74,6 +76,18 @@
        <label for="curtainchildopen">Открыть</label><span><b>Детская:</b></span>
       </div>
      </div>
+    </div>
+    
+    <a name="light"><br/><br/></a>
+    <h1>Свет</h1>
+    <h3>Детская</h3>
+    <div class="s12 m4 group">
+        <input type="checkbox" class="checkbox" name="lightcloud/childroom" id="power" onchange="switchCheckBox(this)" />
+        <label for="power">Вкл/выкл</label>
+    </div>
+    <div class="s12 m4 group">
+        <input type="checkbox" class="checkbox" name="lightcloud/childroom" id="clap" onchange="switchCheckBox(this)" />
+        <label for="clap">Переключение по хлопку</label>
     </div>
     
     <a name="rgb"><br/><br/></a>
@@ -232,7 +246,9 @@
      function switchCheckBox(obj) {
         var json = {}
         json[obj.id] = (obj.checked ? 1 : 0);
-        config[obj.name][obj.id] = json[obj.id]
+        if (config.hasOwnProperty(obj.name)) {
+            config[obj.name][obj.id] = json[obj.id];
+        }
         mqttpub(obj.name, JSON.stringify(json));
      }
      
