@@ -41,6 +41,7 @@
   <div class="in"></div>
   <a href="#curtain">Шторы</a>
   <a href="#light">Свет</a>
+  <a href="#split">Сплит</a>
   <a href="#rgb">RGB</a>
   <a href="#aschedule">Расписание</a>
  </div>
@@ -49,6 +50,7 @@
   <li><a href="/" class="brand">Smarthome</a></li>
   <li><a href="#curtain">Шторы</a></li>
   <li><a href="#light">Свет</a></li>
+  <li><a href="#split">Сплит</a></li>
   <li><a href="#rgb">RGB</a></li>
   <li><a href="#aschedule">Расписание</a></li>
   <!-- <li class="-exit"><a href="#" id="btn_exit" onclick="logout()">Exit</a></li> -->
@@ -58,7 +60,7 @@
     <h1>Шторы</h1>
     <div class="row">
      <div class="s12 m4">
-      <div class="group purple">
+      <div class="group purple onoff">
           <input type="radio" name="curtain/hall" value="1" onchange="processCurtain(this)" id="curtainhallclose" data-command="curtain" data-steps="19300" />
        <label for="curtainhallclose">Закрыть</label>
        <input type="radio" name="curtain/hall" value="0" onchange="processCurtain(this)" id="curtainhallopen" data-command="curtain" data-steps="19000" />
@@ -69,7 +71,7 @@
     
     <div class="row">
      <div class="s12 m4">
-      <div class="group purple">
+      <div class="group purple onoff">
           <input type="radio" name="curtain/childroom" value="1" onchange="processCurtain(this)" id="curtainchildclose" data-command="curtain" data-steps="20900" />
        <label for="curtainchildclose">Закрыть</label>
        <input type="radio" name="curtain/childroom" value="0" onchange="processCurtain(this)" id="curtainchildopen" data-command="curtain" data-steps="20000" />
@@ -80,14 +82,26 @@
     
     <a name="light"><br/><br/></a>
     <h1>Свет</h1>
-    <h3>Детская</h3>
     <div class="s12 m4 group">
         <input type="checkbox" class="checkbox" name="lightcloud/childroom" id="power" onchange="switchCheckBox(this)" />
-        <label for="power">Вкл/выкл</label>
+        <label for="power">Детская: Тучка</label>
     </div>
     <div class="s12 m4 group">
         <input type="checkbox" class="checkbox" name="lightcloud/childroom" id="clap" onchange="switchCheckBox(this)" />
-        <label for="clap">Переключение по хлопку</label>
+        <label for="clap">Детская: Переключение по хлопку</label>
+    </div>
+    
+    <a name="split"><br/><br/></a>
+    <h1>Сплит</h1>
+    <div class="row">
+        <div class="s12">
+            <div class="group">
+                <label for="sploff">Детская</label>
+                <button class="primary" name="lightcloud/childroom" id="sploff" onclick="processSplit(this)">Выкл</button>
+                <button class="primary" name="lightcloud/childroom" id="spldown" onclick="processSplit(this)">24°</button>
+                <button class="primary" name="lightcloud/childroom" id="splup" onclick="processSplit(this)">25°</button>
+            </div>
+        </div>
     </div>
     
     <a name="rgb"><br/><br/></a>
@@ -188,7 +202,7 @@
              }
          })
          
-         $("input[type=radio]").each(function(index){
+         $(".onoff input[type=radio]").each(function(index){
              try {
                 if (this.value === "1") {
                   this.checked = config[this.name][this.dataset.command];
@@ -249,6 +263,12 @@
         if (config.hasOwnProperty(obj.name)) {
             config[obj.name][obj.id] = json[obj.id];
         }
+        mqttpub(obj.name, JSON.stringify(json));
+     }
+     
+     function processSplit(obj) {
+        var json = {}
+        json[obj.id] = 1;
         mqttpub(obj.name, JSON.stringify(json));
      }
      
