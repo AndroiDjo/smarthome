@@ -1,10 +1,13 @@
 from flask import Flask, render_template, request, jsonify
-import mqtt_init, schedule_my, conf
+import schedule_my, conf
 import threading, json
 import schedule, time
+import paho.mqtt.client as mqtt
 
 app = Flask(__name__)
+client = mqtt.Client()
 
+######## web requests begin ###############
 @app.route('/')
 def index():
     json_string = json.dumps(conf.get_config())
@@ -25,7 +28,7 @@ def example():
 def mqttpub():
     req_t = request.args.get('topic')
     req_m = request.args.get('msg')
-    mqtt_init.publish(req_t, req_m)
+    client.publish(req_t, req_m)
     conf.update_config(req_t, json.loads(req_m))
     return jsonify({"response":"OK"})
 
@@ -41,20 +44,37 @@ def deltask():
     req_tag = request.args.get('tag')
     schedule_my.delTask(req_tag)
     return jsonify({"response":"OK"})
+######## web requests end ###############
 
-def mqtt_monitor():
-    print("start mqtt_monitor")
-    mqtt_init.init()
+######## mqtt events begin ###############
+def on_connect(client, userdata, flags, rc):
+    print("Connected with result code "+str(rc))
+    client.subscribe("sensor/resp")
+
+def on_message(client, userdata, msg):
+    print(msg.topic+" "+str(msg.payload))
+
+def on_disconnect(client, userdata, rc):
+    print("disconnected with result code="+str(rc))
+######## mqtt events end ###############
+
+def initMqtt():
+    with open('private.json', 'r') as f:
+        private = json.load(f)
+    client.username_pw_set(private['mqtt_login'], private['mqtt_password'])
+    client.on_connect = on_connect
+    client.on_message = on_message
+    client.on_disconnect = on_disconnect
+    client.connect(private['mqtt_host'], private['mqtt_port'], 60)
+    client.loop_start()
+    print("mqtt initialized")
 
 def shedule_monitor():
     print("start shedule_monitor")
     schedule_my.init()
     
 if __name__ == '__main__':
-    mqtt_thread = threading.Thread(target=mqtt_monitor, args=())
-    mqtt_thread.daemon = True
-    mqtt_thread.start()
-    
+    initMqtt()    
     schedule_thread = threading.Thread(target=shedule_monitor, args=())
     schedule_thread.daemon = True
     schedule_thread.start()

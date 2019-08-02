@@ -203,21 +203,23 @@ void getTemp() {
   tempSensorCallback = false;
   StaticJsonDocument<256> doc;
   sensors_event_t event;
+  const char* clientid = "cloudtemp";
+  doc[clientid]["kind"] = "temperature";
+  doc[clientid]["location"] = "Детская";
   dht.temperature().getEvent(&event);
   if (isnan(event.temperature)) {
     Serial.println(F("Error reading temperature!"));
   }
   else {
-    doc[clientName]["temperature"] = event.temperature;
+    doc[clientid]["temperature"] = event.temperature;
   }
   dht.humidity().getEvent(&event);
   if (isnan(event.relative_humidity)) {
     Serial.println(F("Error reading humidity!"));
   }
   else {
-    doc[clientName]["humidity"] = event.relative_humidity;
+    doc[clientid]["humidity"] = event.relative_humidity;
   }
-  
   char buffer[512];
   size_t n = serializeJson(doc, buffer);
   client.publish("sensor/resp", buffer, n);
@@ -243,6 +245,14 @@ void clapLoop() {
   {
     if (clap == 2)
     {
+      StaticJsonDocument<256> doc;
+      const char* clientid = "cloudclap";
+      doc[clientid]["kind"] = "sound";
+      doc[clientid]["location"] = "Детская";
+      char buffer[512];
+      size_t n = serializeJson(doc, buffer);
+      client.publish("sensor/resp", buffer, n);
+
       if (!status_lights)
       {
         status_lights = true;

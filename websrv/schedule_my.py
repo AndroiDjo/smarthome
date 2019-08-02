@@ -1,9 +1,19 @@
 import schedule
 import time
 import json
-import mqtt_init, conf
+import conf
 import datetime
+import paho.mqtt.client as mqtt
 
+client = mqtt.Client()
+
+def initMqtt():
+    with open('private.json', 'r') as f:
+        private = json.load(f)
+    client.username_pw_set(private['mqtt_login'], private['mqtt_password'])
+    client.connect(private['mqtt_host'], private['mqtt_port'], 60)
+    print("schedule mqtt initialized")
+    
 def getSchedule():
     with open('schedule.json', 'r') as f:
         tasks_json = json.load(f)
@@ -31,7 +41,7 @@ def delTask(tag):
     saveSchedule(tasklist)
         
 def mqttpost(topic, msg):
-    mqtt_init.publish(topic, msg)
+    client.publish(topic, msg)
     conf.update_config(topic, json.loads(msg))
 
 def mqttpostWorkday(topic, msg):
@@ -57,6 +67,7 @@ def addTask(tag, schedobj):
         schedule.every().day.at(schedobj['time']).do(mqttpostWeekend, schedobj['topic'], schedobj['msg']).tag(tag)
 
 def init():
+    initMqtt()
     loadTasks()
     while True:
         schedule.run_pending()
