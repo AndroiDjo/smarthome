@@ -1,5 +1,5 @@
 from flask import Flask, render_template, request, jsonify
-import schedule_my, conf
+import schedule_my, conf, snsr
 import threading, json
 import schedule, time
 import paho.mqtt.client as mqtt
@@ -52,7 +52,7 @@ def on_connect(client, userdata, flags, rc):
     client.subscribe("sensor/resp")
 
 def on_message(client, userdata, msg):
-    print(msg.topic+" "+str(msg.payload))
+    snsr.process(msg.payload)
 
 def on_disconnect(client, userdata, rc):
     print("disconnected with result code="+str(rc))

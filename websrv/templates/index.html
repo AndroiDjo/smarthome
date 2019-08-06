@@ -149,8 +149,8 @@
     <div id="schedule" hidden>{{schedule}}</div>
     <script>     
      /*************CONSTANT*BEGIN***********/
-     var dictSchedulePeriod = {daily:"Ежедневно",workday:"Рабочие дни",weekend:"Выходные дни"};
-     var dictCommands = {'curtain/hall':{'name':'Шторы зал','commands':[{'name':'Закрыть шторы','command':'{"curtain":true,"stepmoveto":19300}','tag':'curtainhallcloseschedule'},{'name':'Открыть шторы','command':'{"curtain":false,"stepmoveto":19000}','tag':'curtainhallopenschedule'}]},'curtain/childroom':{'name':'Шторы детская','commands':[{'name':'Закрыть шторы','command':'{"curtain":true,"stepmoveto":20900}','tag':'curtainchildcloseschedule'},{'name':'Открыть шторы','command':'{"curtain":false,"stepmoveto":20000}','tag':'curtainchildopenschedule'}]}};
+     var dictSchedulePeriod = {daily:"Ежедневно",workday:"Рабочие дни",weekend:"Выходные дни",hour:"Каждый час",minute:"Каждую минуту",second:"Каждую секунду"};
+     var dictCommands = {'curtain/hall':{'name':'Шторы зал','commands':[{'name':'Закрыть шторы','command':'{"curtain":true,"stepmoveto":19300}','tag':'curtainhallcloseschedule'},{'name':'Открыть шторы','command':'{"curtain":false,"stepmoveto":19000}','tag':'curtainhallopenschedule'}]},'curtain/childroom':{'name':'Шторы детская','commands':[{'name':'Закрыть шторы','command':'{"curtain":true,"stepmoveto":20900}','tag':'curtainchildcloseschedule'},{'name':'Открыть шторы','command':'{"curtain":false,"stepmoveto":20000}','tag':'curtainchildopenschedule'}]},'lightcloud/childroom':{'name':'Тучка','commands':[{'name':'Включить','command':'{"power":true}','tag':'childcloudonschedule'},{'name':'Выключить','command':'{"power":false}','tag':'childcloudoffschedule'}]}};
      var cmdContainerId = 'tdCommandContainer';
      var tdCommandId = 'tdCommandId';
      var tdSelectTopicId = 'tdSelectTopicId';
@@ -380,7 +380,7 @@
             buildCommandSelect("#"+cmdContainerId, $("#"+tdSelectTopicId+" :selected").val());
        });
        rowInput$.append($('<td/>').html(periodSelect));
-       var timeInput = $('<input/>',{type:"time", name:"scheduletimeinput", required:"true"});
+       var timeInput = $('<input/>',{type:"time", name:"scheduletimeinput"});
        rowInput$.append($('<td/>').html(timeInput));
        var nameInput = $('<input/>',{type:"text"});
        rowInput$.append($('<td/>').html(nameInput));
@@ -399,10 +399,11 @@
          {
             text: '+',
             click: function () {
+                        var periodVal = $("#"+tdSelectPeriodId+" :selected").val();
                         var inptimeval = timeInput.val();
-                        if (inptimeval) {
+                        if (inptimeval || !(periodVal === "daily" || periodVal === "weekend" || periodVal === "workday")) {
                             var cmdtag = $("#"+tdCommandId+" :selected").val().split(strDivider);
-                            var taskjson = {type:$("#"+tdSelectPeriodId+" :selected").val(),time:inptimeval,topic:$("#"+tdSelectTopicId+" :selected").val(),topicname:$("#"+tdSelectTopicId+" :selected").text(),msg:cmdtag[1],commandname:$("#"+tdCommandId+" :selected").text(),name:nameInput.val()};
+                            var taskjson = {type:periodVal,time:inptimeval,topic:$("#"+tdSelectTopicId+" :selected").val(),topicname:$("#"+tdSelectTopicId+" :selected").text(),msg:cmdtag[1],commandname:$("#"+tdCommandId+" :selected").text(),name:nameInput.val()};
                             addTask(cmdtag[0], taskjson);
                         } else {
                             alert("Введите время!");

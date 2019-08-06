@@ -65,6 +65,12 @@ def addTask(tag, schedobj):
         schedule.every().day.at(schedobj['time']).do(mqttpostWorkday, schedobj['topic'], schedobj['msg']).tag(tag)
     elif schedobj['type'] == 'weekend':
         schedule.every().day.at(schedobj['time']).do(mqttpostWeekend, schedobj['topic'], schedobj['msg']).tag(tag)
+    elif schedobj['type'] == 'hour':
+        schedule.every().hour.do(mqttpost, schedobj['topic'], schedobj['msg']).tag(tag)
+    elif schedobj['type'] == 'minute':
+        schedule.every().minute.do(mqttpost, schedobj['topic'], schedobj['msg']).tag(tag)
+    elif schedobj['type'] == 'second':
+        schedule.every().second.do(mqttpost, schedobj['topic'], schedobj['msg']).tag(tag)
 
 def init():
     initMqtt()

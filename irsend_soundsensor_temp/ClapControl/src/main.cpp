@@ -205,7 +205,7 @@ void getTemp() {
   sensors_event_t event;
   const char* clientid = "cloudtemp";
   doc[clientid]["kind"] = "temperature";
-  doc[clientid]["location"] = "Детская";
+  doc[clientid]["location"] = "childroom";
   dht.temperature().getEvent(&event);
   if (isnan(event.temperature)) {
     Serial.println(F("Error reading temperature!"));
@@ -248,7 +248,7 @@ void clapLoop() {
       StaticJsonDocument<256> doc;
       const char* clientid = "cloudclap";
       doc[clientid]["kind"] = "sound";
-      doc[clientid]["location"] = "Детская";
+      doc[clientid]["location"] = "childroom";
       char buffer[512];
       size_t n = serializeJson(doc, buffer);
       client.publish("sensor/resp", buffer, n);
