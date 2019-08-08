@@ -1,8 +1,9 @@
 from flask import Flask, render_template, request, jsonify
-import schedule_my, conf, snsr
+import conf, snsr
 import threading, json
 import schedule, time
 import paho.mqtt.client as mqtt
+from schedclass import MqttScheduler
 
 app = Flask(__name__)
 client = mqtt.Client()
@@ -11,13 +12,13 @@ client = mqtt.Client()
 @app.route('/')
 def index():
     json_string = json.dumps(conf.get_config())
-    schedule_string = json.dumps(schedule_my.getSchedule())
+    schedule_string = json.dumps(MqttScheduler.getSchedule())
     return render_template('index.html', config=json_string, schedule=schedule_string)
 
 @app.route('/dev')
 def indexdev():
     json_string = json.dumps(conf.get_config())
-    schedule_string = json.dumps(schedule_my.getSchedule())
+    schedule_string = json.dumps(MqttScheduler.getSchedule())
     return render_template('indexdev.html', config=json_string, schedule=schedule_string)
 
 @app.route('/example')
@@ -36,13 +37,13 @@ def mqttpub():
 def addtask():
     req_tag = request.args.get('tag')
     req_msg = request.args.get('msg')
-    schedule_my.processTask(req_tag, json.loads(req_msg))
+    MqttScheduler.addTask(req_tag, json.loads(req_msg))
     return jsonify({"response":"OK"})
 
 @app.route('/deltask')
 def deltask():
     req_tag = request.args.get('tag')
-    schedule_my.delTask(req_tag)
+    MqttScheduler.delTask(req_tag)
     return jsonify({"response":"OK"})
 ######## web requests end ###############
 
@@ -68,16 +69,8 @@ def initMqtt():
     client.connect(private['mqtt_host'], private['mqtt_port'], 60)
     client.loop_start()
     print("mqtt initialized")
-
-def shedule_monitor():
-    print("start shedule_monitor")
-    schedule_my.init()
     
 if __name__ == '__main__':
-    initMqtt()    
-    schedule_thread = threading.Thread(target=shedule_monitor, args=())
-    schedule_thread.daemon = True
-    schedule_thread.start()
-    
+    initMqtt()        
     app.run(debug=False, host='0.0.0.0')
 
