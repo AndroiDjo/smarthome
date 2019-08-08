@@ -39,6 +39,7 @@
  <div id="sideNav" class="sidenav">
   <span href="javascript:void(0)" class="close" onclick="document.getElementById('sideNav').classList.toggle('open');">&times;</span>
   <div class="in"></div>
+  <a href="#sensor">Датчики</a>
   <a href="#curtain">Шторы</a>
   <a href="#light">Свет</a>
   <a href="#split">Сплит</a>
@@ -48,6 +49,7 @@
  <div class="sideopen warning"><a onclick="document.getElementById('sideNav').classList.toggle('open');">&equiv;</a></div>
  <ul class="nav fix warning" id="topNav">
   <li><a href="/" class="brand">Smarthome</a></li>
+  <li><a href="#sensor">Датчики</a></li>
   <li><a href="#curtain">Шторы</a></li>
   <li><a href="#light">Свет</a></li>
   <li><a href="#split">Сплит</a></li>
@@ -56,6 +58,11 @@
   <!-- <li class="-exit"><a href="#" id="btn_exit" onclick="logout()">Exit</a></li> -->
   <li class="-icon"><a href="#" onclick="document.getElementById('topNav').classList.toggle('res');">&equiv;</a></li>
  </ul>
+ 
+    <a name="sensor"><br/><br/></a>
+    <h1>Датчики</h1>
+    <ul id="sensorContainer" class="l-g"></ul>
+    
     <a name="curtain"><br/><br/></a>
     <h1>Шторы</h1>
     <div class="row">
@@ -147,10 +154,12 @@
     
     <div id="configs" hidden>{{config}}</div> 
     <div id="schedule" hidden>{{schedule}}</div>
+    <div id="sensors" hidden>{{sensors}}</div>
     <script>     
      /*************CONSTANT*BEGIN***********/
      var dictSchedulePeriod = {daily:"Ежедневно",workday:"Рабочие дни",weekend:"Выходные дни",hour:"Каждый час",minute:"Каждую минуту",second:"Каждую секунду"};
-     var dictCommands = {'curtain/hall':{'name':'Шторы зал','commands':[{'name':'Закрыть шторы','command':'{"curtain":true,"stepmoveto":19300}','tag':'curtainhallcloseschedule'},{'name':'Открыть шторы','command':'{"curtain":false,"stepmoveto":19000}','tag':'curtainhallopenschedule'}]},'curtain/childroom':{'name':'Шторы детская','commands':[{'name':'Закрыть шторы','command':'{"curtain":true,"stepmoveto":20900}','tag':'curtainchildcloseschedule'},{'name':'Открыть шторы','command':'{"curtain":false,"stepmoveto":20000}','tag':'curtainchildopenschedule'}]},'lightcloud/childroom':{'name':'Тучка','commands':[{'name':'Включить','command':'{"power":true}','tag':'childcloudonschedule'},{'name':'Выключить','command':'{"power":false}','tag':'childcloudoffschedule'}]}};
+     var dictCommands = {'curtain/hall':{'name':'Шторы зал','commands':[{'name':'Закрыть шторы','command':'{"curtain":true,"stepmoveto":19300}','tag':'curtainhallcloseschedule'},{'name':'Открыть шторы','command':'{"curtain":false,"stepmoveto":19000}','tag':'curtainhallopenschedule'}]},'curtain/childroom':{'name':'Шторы детская','commands':[{'name':'Закрыть шторы','command':'{"curtain":true,"stepmoveto":20900}','tag':'curtainchildcloseschedule'},{'name':'Открыть шторы','command':'{"curtain":false,"stepmoveto":20000}','tag':'curtainchildopenschedule'}]},'lightcloud/childroom':{'name':'Тучка','commands':[{'name':'Включить','command':'{"power":true}','tag':'childcloudonschedule'},{'name':'Выключить','command':'{"power":false}','tag':'childcloudoffschedule'}]},'sensor/req':{'name':'Датчики','commands':[{'name':'Получить данные','command':'{"getall":1}','tag':'allsensorsgetschedule'}]}};
+     var dictLocations = {childroom:"Детская", hall:"Зал"};
      var cmdContainerId = 'tdCommandContainer';
      var tdCommandId = 'tdCommandId';
      var tdSelectTopicId = 'tdSelectTopicId';
@@ -162,6 +171,7 @@
      
      var config = JSON.parse($("#configs").text());
      var scheduleJson = JSON.parse($("#schedule").text());
+     var sensorsJson = JSON.parse($("#sensors").text());
      
      function setDefaults(config){
          $("input[type=checkbox]").each(function(index){
@@ -415,6 +425,15 @@
        $(selector).append(rowInput$);
        buildCommandSelect("#"+cmdContainerId, $("#"+tdSelectTopicId+" :selected").val());
      }
+     
+     function buildSensorsList(container, json) {
+        $(container).empty();
+        for (var keytag in json) {
+            if (json[keytag].kind === "temperature") {
+                $(container).append($('<li>').html("<b>"+dictLocations[json[keytag].location]+":</b> температура: "+json[keytag].temperature+"; влажность: "+json[keytag].humidity+"%; время замера: "+json[keytag].date));
+            }
+        }
+     }
 
      jQuery(document).ready(function(){
         jQuery('.spoiler-text').hide();
@@ -422,6 +441,7 @@
             jQuery(this).toggleClass("folded").toggleClass("unfolded").next().slideToggle('slow');
         });
         setDefaults(config);
+        buildSensorsList("#sensorContainer", sensorsJson);
         buildHtmlTable(scheduleTableId, scheduleJson);
      });
 

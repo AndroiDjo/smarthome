@@ -13,7 +13,8 @@ client = mqtt.Client()
 def index():
     json_string = json.dumps(conf.get_config())
     schedule_string = json.dumps(MqttScheduler.getSchedule())
-    return render_template('index.html', config=json_string, schedule=schedule_string)
+    sensors_string = json.dumps(snsr.get_config())
+    return render_template('index.html', config=json_string, schedule=schedule_string, sensors=sensors_string)
 
 @app.route('/dev')
 def indexdev():
