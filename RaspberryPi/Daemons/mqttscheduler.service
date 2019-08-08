@@ -1,0 +1,17 @@
+[Unit]
+Description=MqttScheduler
+Wants=network-online.target
+After=network-online.target mosquitto.service
+
+[Service]
+ExecStart=/home/pi/.pyenv/versions/3.7.2/bin/python -u schedclass.py
+Restart=always
+User=pi
+# Note Debian/Ubuntu uses 'nogroup', RHEL/Fedora uses 'nobody'
+Group=nogroup
+#Environment=PATH=/usr/bin:/usr/local/bin
+#Environment=NODE_ENV=production
+WorkingDirectory=/home/pi/websrv
+
+[Install]
+WantedBy=multi-user.target

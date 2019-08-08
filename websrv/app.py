@@ -1,9 +1,9 @@
+from schedclass import MqttScheduler
 from flask import Flask, render_template, request, jsonify
 import conf, snsr
-import threading, json
-import schedule, time
+import json
+import time
 import paho.mqtt.client as mqtt
-from schedclass import MqttScheduler
 
 app = Flask(__name__)
 client = mqtt.Client()
