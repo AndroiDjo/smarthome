@@ -20,7 +20,7 @@ def update_config(name, value):
 
 def logToFile(msg):
     with open("/var/log/sensors.log", "a", buffering=1) as log:
-        log.write(msg)
+        log.write(json.dumps(msg)+"\n")
 
 def process(msg):
     jmsg = json.loads(msg)
