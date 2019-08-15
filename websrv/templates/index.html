@@ -90,12 +90,12 @@
     <a name="light"><br/><br/></a>
     <h1>Свет</h1>
     <div class="s12 m4 group">
-        <input type="checkbox" class="checkbox" name="lightcloud/childroom" id="power" onchange="switchCheckBox(this)" />
-        <label for="power">Детская: Тучка</label>
+        <input type="checkbox" class="checkbox" name="lightcloud/childroom" id="lightcloudchildroompower" onchange="switchCheckBox(this)" data-command="power" />
+        <label for="lightcloudchildroompower">Детская: Тучка</label>
     </div>
     <div class="s12 m4 group">
-        <input type="checkbox" class="checkbox" name="lightcloud/childroom" id="clap" onchange="switchCheckBox(this)" />
-        <label for="clap">Детская: Переключение по хлопку</label>
+        <input type="checkbox" class="checkbox" name="lightcloud/childroom" id="lightcloudchildroomclap" onchange="switchCheckBox(this)" data-command="clap" />
+        <label for="lightcloudchildroomclap">Детская: Переключение по хлопку</label>
     </div>
     
     <a name="split"><br/><br/></a>
@@ -114,8 +114,8 @@
     <a name="rgb"><br/><br/></a>
     <h1>RGB</h1>
     <div class="s12 m4 group">
-        <input type="checkbox" class="checkbox" name="rgb/kitchen" id="power" onchange="switchCheckBox(this)" />
-        <label for="power">Вкл/выкл</label>
+        <input type="checkbox" class="checkbox" name="rgb/kitchen" id="rgbkitchenpower" onchange="switchCheckBox(this)" data-command="power" />
+        <label for="rgbkitchenpower">Вкл/выкл</label>
     </div>
     <div class="group">
         <input type="color" id="tocolor" name="rgb/kitchen" onchange="setColor(this)">
@@ -140,8 +140,8 @@
         </div> 
     </div>
     <div class="s12 m4 group">
-        <input type="checkbox" class="checkbox" name="rgb/kitchen" id="detectmove" onchange="switchCheckBox(this)" />
-        <label for="detectmove">Датчик движения</label>
+        <input type="checkbox" class="checkbox" name="rgb/kitchen" id="rgbkitchendetectmove" onchange="switchCheckBox(this)" data-command="detectmove" />
+        <label for="rgbkitchendetectmove">Датчик движения</label>
     </div> 
     <div class="group">
         <input type="number" name="rgb/kitchen" id="delaymove" data-multiplier="60000000" required=" " min="0" max="255" value="" onchange="editInput(this)" />
@@ -176,7 +176,7 @@
      function setDefaults(config){
          $("input[type=checkbox]").each(function(index){
              try {
-                this.checked = (config[this.name][this.id] == 1);
+                this.checked = (config[this.name][this.dataset.command] == 1);
                 if (this.checked) {
                     var showblock = this.dataset.showblock;
                     if (showblock) {
@@ -269,9 +269,9 @@
      
      function switchCheckBox(obj) {
         var json = {}
-        json[obj.id] = (obj.checked ? 1 : 0);
+        json[obj.dataset.command] = (obj.checked ? 1 : 0);
         if (config.hasOwnProperty(obj.name)) {
-            config[obj.name][obj.id] = json[obj.id];
+            config[obj.name][obj.dataset.command] = json[obj.dataset.command];
         }
         mqttpub(obj.name, JSON.stringify(json));
      }
@@ -370,10 +370,12 @@
          var closeBtn = $('<button/>',
          {
             text: '-',
-            click: function () { 
-                        delTask(keytag);
-                        buildHtmlTable(selector, scheduleJson);
-                   },
+            click: (function (taskname) { 
+                        return function (){
+                            delTask(taskname);
+                            buildHtmlTable(selector, scheduleJson);
+                        };
+                   })(keytag),
             class: 'info round small'
          });
          row$.append($('<td/>').html(closeBtn));
