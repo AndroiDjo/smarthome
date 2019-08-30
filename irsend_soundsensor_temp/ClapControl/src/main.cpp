@@ -32,7 +32,6 @@ bool saveSettingsCallback = false; // колбэк для сохранения �
 const char* clientName = "nodemcu_lightcloud"; // название MQTT клиента
 int relayPin = 4;
 const uint16_t kIrLed = 5;  
-
 IRsend irsend(kIrLed);  // Set the GPIO to be used to sending the message.
 
 // Example of data captured by IRrecvDumpV2.ino

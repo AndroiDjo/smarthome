@@ -1,6 +1,6 @@
 from schedclass import MqttScheduler
 from flask import Flask, render_template, request, jsonify
-import conf, snsr
+import conf, snsr, ircommand
 import json
 import time
 import paho.mqtt.client as mqtt
@@ -45,6 +45,13 @@ def addtask():
 def deltask():
     req_tag = request.args.get('tag')
     MqttScheduler.delTask(req_tag)
+    return jsonify({"response":"OK"})
+
+@app.route('/irsend')
+def irsend():
+    req_t = request.args.get('topic')
+    req_c = request.args.get('command')
+    ircommand.sendCommand(client, req_c, req_t)
     return jsonify({"response":"OK"})
 ######## web requests end ###############
 
