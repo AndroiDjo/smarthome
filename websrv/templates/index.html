@@ -55,7 +55,6 @@
   <li><a href="#split">Сплит</a></li>
   <li><a href="#rgb">RGB</a></li>
   <li><a href="#aschedule">Расписание</a></li>
-  <!-- <li class="-exit"><a href="#" id="btn_exit" onclick="logout()">Exit</a></li> -->
   <li class="-icon"><a href="#" onclick="document.getElementById('topNav').classList.toggle('res');">&equiv;</a></li>
  </ul>
  
@@ -90,6 +89,14 @@
     <a name="light"><br/><br/></a>
     <h1>Свет</h1>
     <div class="s12 m4 group">
+        <input type="checkbox" class="checkbox" name="light/hall" id="lighthallpower" onchange="switchCheckBox(this)" data-command="power" />
+        <label for="lighthallpower">Зал</label>
+    </div>
+    <div class="s12 m4 group">
+        <input type="checkbox" class="checkbox" name="light/hall" id="lighthallclap" onchange="switchCheckBox(this)" data-command="clap" />
+        <label for="lighthallclap">Зал: Переключение по хлопку</label>
+    </div>
+    <div class="s12 m4 group">
         <input type="checkbox" class="checkbox" name="lightcloud/childroom" id="lightcloudchildroompower" onchange="switchCheckBox(this)" data-command="power" />
         <label for="lightcloudchildroompower">Детская: Тучка</label>
     </div>
@@ -103,11 +110,22 @@
     <div class="row">
         <div class="s12">
             <div class="group">
+                <label for="sploff">Зал</label>
+                <button class="purple small" name="light/hall" id="sploff" onclick="processSplit(this)">Выкл</button>
+                <button class="purple small" name="light/hall" id="spltemp24" onclick="processSplit(this)">24°</button>
+                <button class="purple small" name="light/hall" id="spltemp25" onclick="processSplit(this)">25°</button>
+                <button class="purple small" name="light/hall" id="spltemp26" onclick="processSplit(this)">26°</button>
+            </div>
+        </div>
+    </div>
+    <div class="row">
+        <div class="s12">
+            <div class="group">
                 <label for="sploff">Детская</label>
-                <button class="primary" name="lightcloud/childroom" id="sploff" onclick="processSplit(this)">Выкл</button>
-                <button class="primary" name="lightcloud/childroom" id="spltemp24" onclick="processSplit(this)">24°</button>
-                <button class="primary" name="lightcloud/childroom" id="spltemp25" onclick="processSplit(this)">25°</button>
-                <button class="primary" name="lightcloud/childroom" id="spltemp26" onclick="processSplit(this)">26°</button>
+                <button class="purple small" name="lightcloud/childroom" id="sploff" onclick="processSplit(this)">Выкл</button>
+                <button class="purple small" name="lightcloud/childroom" id="spltemp24" onclick="processSplit(this)">24°</button>
+                <button class="purple small" name="lightcloud/childroom" id="spltemp25" onclick="processSplit(this)">25°</button>
+                <button class="purple small" name="lightcloud/childroom" id="spltemp26" onclick="processSplit(this)">26°</button>
             </div>
         </div>
     </div>
@@ -159,7 +177,7 @@
     <script>     
      /*************CONSTANT*BEGIN***********/
      var dictSchedulePeriod = {daily:"Ежедневно",workday:"Рабочие дни",weekend:"Выходные дни",hour:"Каждый час",minute:"Каждую минуту",second:"Каждую секунду"};
-     var dictCommands = {'curtain/hall':{'name':'Шторы зал','commands':[{'name':'Закрыть шторы','command':'{"curtain":true,"stepmoveto":19300}','tag':'curtainhallcloseschedule'},{'name':'Открыть шторы','command':'{"curtain":false,"stepmoveto":19000}','tag':'curtainhallopenschedule'}]},'curtain/childroom':{'name':'Шторы детская','commands':[{'name':'Закрыть шторы','command':'{"curtain":true,"stepmoveto":20900}','tag':'curtainchildcloseschedule'},{'name':'Открыть шторы','command':'{"curtain":false,"stepmoveto":20000}','tag':'curtainchildopenschedule'}]},'lightcloud/childroom':{'name':'Тучка','commands':[{'name':'Включить','command':'{"power":true}','tag':'childcloudonschedule'},{'name':'Выключить','command':'{"power":false}','tag':'childcloudoffschedule'}]},'sensor/req':{'name':'Датчики','commands':[{'name':'Получить данные','command':'{"getall":1}','tag':'allsensorsgetschedule'}]}};
+     var dictCommands = {'curtain/hall':{'name':'Шторы зал','commands':[{'name':'Закрыть шторы','command':'{"curtain":true,"stepmoveto":19300}','tag':'curtainhallcloseschedule'},{'name':'Открыть шторы','command':'{"curtain":false,"stepmoveto":19000}','tag':'curtainhallopenschedule'}]},'curtain/childroom':{'name':'Шторы детская','commands':[{'name':'Закрыть шторы','command':'{"curtain":true,"stepmoveto":20900}','tag':'curtainchildcloseschedule'},{'name':'Открыть шторы','command':'{"curtain":false,"stepmoveto":20000}','tag':'curtainchildopenschedule'}]},'lightcloud/childroom':{'name':'Тучка','commands':[{'name':'Включить','command':'{"power":true}','tag':'childcloudonschedule'},{'name':'Выключить','command':'{"power":false}','tag':'childcloudoffschedule'}]},'light/hall':{'name':'Свет зал','commands':[{'name':'Включить','command':'{"power":true}','tag':'halllightonschedule'},{'name':'Выключить','command':'{"power":false}','tag':'halllightoffschedule'}]},'sensor/req':{'name':'Датчики','commands':[{'name':'Получить данные','command':'{"getall":1}','tag':'allsensorsgetschedule'}]}};
      var dictLocations = {childroom:"Детская", hall:"Зал"};
      var cmdContainerId = 'tdCommandContainer';
      var tdCommandId = 'tdCommandId';
@@ -244,6 +262,16 @@
             $(loaderId).addClass('hide');
          });
      }
+
+     function irsend(topic, command) {
+         $(loaderId).removeClass('hide');
+         $.getJSON('/irsend', {
+	         topic: topic,
+             command: command
+	     }, function(resp) {
+            $(loaderId).addClass('hide');
+         });
+     }
      
      function addTask(tag, msg) {
          $(loaderId).removeClass('hide');
@@ -278,9 +306,7 @@
      }
      
      function processSplit(obj) {
-        var json = {}
-        json[obj.id] = 1;
-        mqttpub(obj.name, JSON.stringify(json));
+        irsend(obj.name, obj.id);
      }
      
      function editInput(obj) {

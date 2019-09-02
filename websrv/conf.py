@@ -11,8 +11,8 @@ def save_config(jsonobj):
         
 def update_config(name, value):
     config = get_config()
-    if name in config:
+    try:
         config[name].update(value)
-    else:
+    except:
         config[name] = value
     save_config(config)
