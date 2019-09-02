@@ -1,7 +1,7 @@
 import json, math
 
 irCommandsPath = 'ircommands.json'
-partlength = 16
+partlength = 14
 
 def sendCommand(mqtt, commandname, topic):
     with open(irCommandsPath, 'r') as f:

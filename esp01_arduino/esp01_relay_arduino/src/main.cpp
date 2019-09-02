@@ -43,9 +43,9 @@ void initPrivate() {
 void setPower(bool pwr) {
   power = pwr;
   if (power) {
-    digitalWrite(relayPin, HIGH); // реле включено
+    digitalWrite(relayPin, LOW); // реле включено
   } else {
-    digitalWrite(relayPin, LOW); // реле выключено
+    digitalWrite(relayPin, HIGH); // реле выключено
   }
   saveSettingsCallback = true;
 }
@@ -130,6 +130,7 @@ void reconnect() {
     delay(100);
     if (client.connect(clientName, mqtt.login, mqtt.pass)) {
       client.subscribe("all/modules");
+      client.subscribe("all/light");
       client.subscribe("light/hall");
       client.subscribe("sensor/req");
     } else {

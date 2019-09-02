@@ -7,7 +7,6 @@
 #include <Adafruit_Sensor.h>
 #include <DHT.h>
 #include <DHT_U.h>
-#include <IRremoteESP8266.h>
 #include <IRsend.h>
 #include <PubSubClient.h>
 
@@ -22,7 +21,6 @@ int clap = 0;
 long detection_range_start = 0;
 long detection_range = 0;
 boolean status_lights = false;
-const int jsonSize = 1024; // размер буфера для парсинга json
 bool power = true; // переменная отвечает за отключение/включение светильника
 bool clapSensor = true; // переключение реле по хлопку
 int delayCounter = 0;
@@ -33,22 +31,10 @@ const char* clientName = "nodemcu_lightcloud"; // название MQTT клие
 int relayPin = 4;
 const uint16_t kIrLed = 5;  
 IRsend irsend(kIrLed);  // Set the GPIO to be used to sending the message.
-
-// Example of data captured by IRrecvDumpV2.ino
-uint16_t powerOff[229] = {3132, 3064,  3094, 4560,  576, 1720,  526, 580,  576, 1720,  524, 580,  580, 554,  578, 1718,  552, 1718,  524, 580,  556, 1742,  550, 554,  578, 556,  554, 1742,  526, 1744,  526, 1718,  552,
-580,  552, 578,  554, 578,  554, 580,  554, 580,  554, 576,  554, 580,  576, 556,  554, 580,  578, 554,  554, 580,  552, 578,  578, 554,  554, 578,  552, 580,  578, 554,  556, 576,  556, 578,  554, 578,  554, 580,  554, 580,  552, 580,  556, 576,  552, 580,  558, 576,  552, 580,  552, 580,  554, 1718,  550, 1722,  548, 580,  552, 580,  552, 580,  556, 578,  552, 580,  552, 578,  554, 580,  554, 580,  552, 580,  554, 578,  554, 580,
- 554, 578,  554, 578,  552, 580,  554, 580,  550, 1722,  546, 582,  550, 582,  554, 580,  560, 572,  552, 580,  554, 578,  576, 556,  554, 578,  554, 580,  578, 554,  554, 578,  558, 576,  552, 580,  554, 578,  552, 580,  552, 580,  578, 556,  554, 578,  554, 580,  556, 578,  554, 578,  552, 578,  554, 580,  554, 578,  556, 578,  552, 578,  554, 578,  582, 552,  552, 580,  556, 578,  554, 578,  552, 580,  554, 578,  556, 578,  552,
-580,  554, 580,  552, 580,  552, 580,  554, 580,  550, 580,  552, 580,  552, 578,  554, 1720,  550, 580,  552, 1718,  550, 1722,  548, 1720,  546, 584,  550, 582,  552, 580,  552, 1720,  544, 1722,  526, 1746,  544};
-
-uint16_t temp24[229] = {3042, 3162,  3064, 4598,  554, 1750,  526, 588,  556, 1746,  526, 586,  556, 584,  556, 1746,  526, 1750,  526, 586,  558, 1744,  526, 586,  558, 584,  556, 588,  556, 1746,  526, 1746,  526, 586,  556, 582,  556, 582,  558, 582,  556, 584,  556, 584,  558, 582,  558, 582,  556, 582,  556, 582,  556, 584,  556, 584,  556, 584,  556, 584,  556, 584,  556, 582,  556, 584,  558, 584,  556, 582,  558, 1746,  526, 586,  556, 584,  556, 584,  556, 584,  556, 584,  556, 584,  558, 582,  558, 1746,  526, 1750,  526, 588,  556, 584,  556, 582,  558, 584,  556, 582,  558, 582,  558, 582,  558, 582,  558, 582,  558, 584,  558, 582,
- 556, 584,  558, 584,  556, 584,  556, 584,  556, 1746,  526, 586,  558, 580,  556, 580,  556, 580,  556, 582,  556, 584,  556, 582,  558, 584,  556, 582,  558, 584,  556, 582,  558, 582,  556, 584,  556, 584,  558, 582,  558, 582,  556, 584,  556, 584,  556, 584,  556, 584,  556, 582,  556, 584,  556, 584,  556, 584,  558, 582,  556, 584,  558, 582,  558, 584,  556, 584,  556, 582,  558, 582,  556, 582,  556, 582,  556, 584,  558,
-584,  556, 582,  558, 582,  556, 584,  558, 584,  556, 584,  558, 582,  558, 584,  556, 582,  558, 584,  556, 1746,  526, 1750,  526, 1750,  526, 1750,  526, 1750,  526, 584,  558, 580,  556, 1744,  528, 1750,  526};
-
-uint16_t temp25[229] = {3072, 3126,  3072, 4584,  554, 1744,  528, 582,  558, 1740,  528, 582,  558, 578,  558, 1740,  528, 1744,  528, 582,  558, 1742,  528, 580,  558, 576,  580, 1718,  528, 1744,  528, 1746,  528,
-580,  558, 576,  558, 578,  558, 576,  558, 578,  558, 576,  558, 578,  584, 552,  558, 578,  558, 580,  578, 554,  560, 574,  560, 576,  558, 578,  558, 576,  558, 576,  582, 552,  560, 576,  560, 576,  560, 1714,  552, 582,  558, 578,  560, 576,  560, 576,  558, 578,  558, 578,  582, 554,  584, 1714,  528, 1722,  550, 580,  558, 578,  558, 578,  558, 576,  558, 578,  582, 552,  582, 552,  558, 578,  558, 578,  558, 578,  558, 576,  560, 576,  558, 578,  580, 554,  558, 576,  558, 1740,  528, 580,  560, 576,  582, 554,  582, 554,  558, 576,  560, 576,  558, 576,  558, 576,  584, 552,  582, 552,  560, 576,  558, 576,  560, 576,  582, 554,  560, 576,  582, 554,  558, 576,  558, 582,  554, 576,  558, 576,  582, 554,  560, 576,  560, 576,  582, 554,  558, 576,  582, 554,  560, 576,  558, 576,  558, 578,  582, 552,  584, 552,  582, 554,  560, 576,  582, 552,  560, 576,  582, 554,  582, 554,  560, 576,  582, 554,  580, 558,  580, 552,  582, 552,  584, 552,  560, 576,  582, 554,  584, 552,  558, 578,  582, 552,  584, 552,  582, 554,  582, 554,  558, 1718,  552, 580,  560};
-
-uint16_t temp26[229] = {3076, 3148,  3076, 4588,  532, 1772,  504, 608,  530, 1746,  528, 608,  530, 606,  530, 1768,  504, 1746,  548, 586,  530, 1746,  528, 606,  548, 1724,  550, 584,  530, 1748,  526, 1770,  504, 608,  530, 608,  530, 606,  550, 588,  530, 608,  530, 606,  532, 608,  530, 608,  530, 608,  528, 608,  530, 608,  530, 608,  530, 606,  532, 606,  530, 608,  530, 608,  530, 608,  550, 586,  530, 608,  528, 1770,  504, 608,  530, 608,  530, 608,  530, 606,  530, 608,  530, 608,  530, 606,  530, 1746,  528, 1744,  530, 614,  530, 612,  530, 608,  530, 608,  528, 608,  530, 606,  530, 604,  532, 606,  530, 606,  530, 604,  532, 606,  530, 610,  530, 608,  530, 606,  530, 606,  530, 1748,  526, 608,  530, 608,  530, 608,  530, 608,  530, 608,  530, 608,  530, 606,  530, 608,  530, 608,  528, 608,  532, 608,  530, 608,  532, 604,  530, 608,  530, 608,
- 530, 606,  532, 606,  530, 606,  530, 610,  530, 608,  530, 608,  530, 606,  530, 608,  530, 608,  530, 606,  532, 608,  530, 608,  530, 606,  532, 606,  530, 606,  530, 608,  530, 608,  530, 608,  530, 608,  530, 608,  530, 608,  530, 608,  530, 608,  530, 608,  530, 608,  528, 608,  530, 608,  530, 606,  530, 1748,  530, 608,  532, 606,  532, 606,  532, 608,  530, 1746,  528, 606,  532, 1742,  530, 606,  530, 608,  530};
+int rawSize = 0;
+int rawIndex = 0;
+long splitTimer = 0;
+uint16_t* cmdraw = NULL;
 
 // учетные данные Mosquitto
 struct Mqtt {
@@ -103,7 +89,32 @@ void setPower(bool pwr) {
   saveSettingsCallback = true;
 }
 
-void parseRequest(DynamicJsonDocument& doc) {
+void splitCommand(const JsonDocument& doc) {
+  if (doc.containsKey("rawsize")) {
+    splitTimer = millis();
+    rawSize = doc["rawsize"];
+    rawIndex = 0;
+    if (cmdraw) {
+      delete [] cmdraw;
+      cmdraw = NULL;
+    }
+    cmdraw = new uint16_t[rawSize];
+  }
+  if (cmdraw) {
+    int arraySize = doc["split"].size();
+    for (int i = 0; i< arraySize; i++) {
+      cmdraw[rawIndex] = doc["split"][i];
+      rawIndex++;
+    }
+    if (doc.containsKey("rawend") || millis() - splitTimer > 1000) {
+      irsend.sendRaw(cmdraw, rawSize, 38);
+      delete [] cmdraw;
+      cmdraw = NULL;
+    }
+  }
+}
+
+void parseRequest(const JsonDocument& doc) {
   if (doc.containsKey("power")) {
     setPower(doc["power"]);
   }
@@ -117,21 +128,15 @@ void parseRequest(DynamicJsonDocument& doc) {
     tempSensorCallback = true;
   }
 
-  if (doc.containsKey("sploff")) {
-    irsend.sendRaw(powerOff, 229, 38);
-  } else if (doc.containsKey("spltemp24")) {
-    irsend.sendRaw(temp24, 229, 38);
-  } else if (doc.containsKey("spltemp25")) {
-    irsend.sendRaw(temp25, 229, 38);
-  } else if (doc.containsKey("spltemp26")) {
-    irsend.sendRaw(temp26, 229, 38);
+ if (doc.containsKey("split")) {
+    splitCommand(doc);
   }
 }
 
 // сохранение параметров в формате json в SPIFFS память
 void saveSettings() {
    saveSettingsCallback = false;
-   DynamicJsonDocument doc(jsonSize);
+   StaticJsonDocument<256> doc;
    doc["power"] = power;
    doc["clap"] = clapSensor;
    File destFile = SPIFFS.open(configFile, "w");
@@ -146,7 +151,7 @@ void saveSettings() {
 void loadSettings() {
   Serial.println("loadSettings");
    File file = SPIFFS.open(configFile, "r");
-   DynamicJsonDocument doc(jsonSize);
+   StaticJsonDocument<256> doc;
    if (file) {
      DeserializationError error = deserializeJson(doc, file);
      if (error) {
@@ -163,7 +168,7 @@ void loadSettings() {
 
 // обработчик MQTT команд
 void callback(char* topic, byte* payload, unsigned int length) {
-  DynamicJsonDocument doc(jsonSize);
+  StaticJsonDocument<512> doc;
   DeserializationError error = deserializeJson(doc, payload, length);
   if (error) {
     Serial.println("Failed to dsrlz mqtt message");
@@ -181,6 +186,7 @@ void reconnect() {
       Serial.print(clientName);
       Serial.println(" connected");
       client.subscribe("all/modules");
+      client.subscribe("all/light");
       client.subscribe("lightcloud/childroom");
       client.subscribe("sensor/req");
     } else {
@@ -271,7 +277,7 @@ void delayLoop() {
 }
 
 void setup() {
-  Serial.begin(115200, SERIAL_8N1, SERIAL_TX_ONLY);
+  Serial.begin(115200);
 
   delay(2000);
   Serial.println("Mounting FS...");
