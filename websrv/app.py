@@ -61,7 +61,7 @@ def on_connect(client, userdata, flags, rc):
     client.subscribe("sensor/resp")
 
 def on_message(client, userdata, msg):
-    snsr.process(msg.payload)
+    snsr.process(msg.payload.decode("utf-8"))
 
 def on_disconnect(client, userdata, rc):
     print("disconnected with result code="+str(rc))
