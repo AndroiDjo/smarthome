@@ -1,0 +1,4 @@
+[Desktop Entry]
+Type=Application
+Name=Smarteye
+Exec=/usr/bin/python3 /home/pi/websrv/smarteye.py
