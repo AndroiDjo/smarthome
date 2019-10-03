@@ -1,4 +1,5 @@
-import pyaudio, os, grpc, json, sys, signal
+import pyaudio, os, grpc, json, sys, signal, shutil
+from time import sleep
 from datetime import datetime
 import getiamtoken
 from fuzzywuzzy import fuzz
@@ -127,6 +128,13 @@ def initMqtt():
     print("mqtt initialized")
 
 if __name__ == '__main__':
+    print('wait 10 sec ...')
+    sleep(10) # подождем 10 сек и перезапишем настройки звука .asoundrc
+    with open('/home/pi/.asoundrc', 'r') as f:
+        if 'slave.pcm "hw:1,0"' not in f.read():
+            shutil.copyfile('/home/pi/backup/.asoundrc', '/home/pi/.asoundrc')
+            print('.asoundrc has been overwriten!')
+
     initMqtt()
     signal.signal(signal.SIGINT, signal_handler)
     detector = snowboydecoder.HotwordDetector(hotword_model, sensitivity=hotword_sensivity)

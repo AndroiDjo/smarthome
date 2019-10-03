@@ -1,0 +1,16 @@
+[Unit]
+Description=Alice voice assistant
+Wants=network-online.target
+After=network-online.target mosquitto.service
+
+[Service]
+ExecStart=/usr/bin/python3 -u alice.py
+Restart=always
+User=pi
+# Note Debian/Ubuntu uses 'nogroup', RHEL/Fedora uses 'nobody'
+Group=nogroup
+# Environment=PATH=/usr/bin:/usr/local/bin:/home/pi/.pyenv/bin
+WorkingDirectory=/home/pi/yandex/cloudapi/output/
+
+[Install]
+WantedBy=multi-user.target
