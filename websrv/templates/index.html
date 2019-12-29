@@ -43,7 +43,8 @@
   <a href="#curtain">Шторы</a>
   <a href="#light">Свет</a>
   <a href="#split">Сплит</a>
-  <a href="#rgb">RGB</a>
+  <a href="#rgb">Подсветка на кухне</a>
+  <a href="#gyverlamp">Волшебная лампа</a>
   <a href="#aschedule">Расписание</a>
  </div>
  <div class="sideopen warning"><a onclick="document.getElementById('sideNav').classList.toggle('open');">&equiv;</a></div>
@@ -53,11 +54,12 @@
   <li><a href="#curtain">Шторы</a></li>
   <li><a href="#light">Свет</a></li>
   <li><a href="#split">Сплит</a></li>
-  <li><a href="#rgb">RGB</a></li>
+  <li><a href="#rgb">Подсветка на кухне</a></li>
+  <li><a href="#gyverlamp">Волшебная лампа</a></li>
   <li><a href="#aschedule">Расписание</a></li>
   <li class="-icon"><a href="#" onclick="document.getElementById('topNav').classList.toggle('res');">&equiv;</a></li>
  </ul>
- 
+
     <a name="sensor"><br/><br/></a>
     <h1>Датчики</h1>
     <ul id="sensorContainer" class="l-g"></ul>
@@ -131,7 +133,7 @@
     </div>
     
     <a name="rgb"><br/><br/></a>
-    <h1>RGB</h1>
+    <h1>Подсветка на кухне</h1>
     <div class="s12 m4 group">
         <input type="checkbox" class="checkbox" name="rgb/kitchen" id="rgbkitchenpower" onchange="switchCheckBox(this)" data-command="power" />
         <label for="rgbkitchenpower">Вкл/выкл</label>
@@ -166,7 +168,18 @@
         <input type="number" name="rgb/kitchen" id="delaymove" data-multiplier="60000000" required=" " min="0" max="255" value="" onchange="editInput(this)" />
         <label for="delaymove">Автоотключение, мин.</label>
     </div>
-    
+
+    <a name="gyverlamp"><br/><br/></a>
+    <h1>Волшебная лампа</h1>
+    <div class="group">
+        <input type="color" id="gyvercolorinput" name="homeassistant/light/ESP-e481f9/rgb/set" onchange="gyvercolor(this)">
+        <label for="gyvercolorinput">Цвет</label>
+    </div>
+    <button class="purple" onclick="$('#gyverlampblock').slideToggle('slow');">Режимы</button>
+    <div id="gyverlampblock" style="display: none;">
+        <iframe src="http://192.168.1.66/" width="100%" height="500px"></iframe>
+    </div>
+
     <a name="aschedule"><br/><br/></a>
     <h1>Расписание</h1>
     <table id="scheduleTable"></table>
@@ -263,6 +276,16 @@
          });
      }
 
+     function mqttpubnsave(topic, msg) {
+         $(loaderId).removeClass('hide');
+         $.getJSON('/mqttpubnsave', {
+	         topic: topic,
+             msg: msg
+	     }, function(resp) {
+            $(loaderId).addClass('hide');
+         });
+     }
+
      function irsend(topic, command) {
          $(loaderId).removeClass('hide');
          $.getJSON('/irsend', {
@@ -302,7 +325,7 @@
         if (config.hasOwnProperty(obj.name)) {
             config[obj.name][obj.dataset.command] = json[obj.dataset.command];
         }
-        mqttpub(obj.name, JSON.stringify(json));
+        mqttpubnsave(obj.name, JSON.stringify(json));
      }
      
      function processSplit(obj) {
@@ -314,7 +337,7 @@
         var mlt = parseInt(obj.dataset.multiplier);
         json[obj.id] = parseInt(obj.value) * mlt;
         config[obj.name][obj.id] = json[obj.id]
-        mqttpub(obj.name, JSON.stringify(json));
+        mqttpubnsave(obj.name, JSON.stringify(json));
      }
      
      function getJsonColor(obj) {
@@ -323,9 +346,14 @@
         json[obj.id] = {r:cc(clr.r), g:cc(clr.g), b:cc(clr.b)};
         return json;
      }
+
+     function gyvercolor(obj) {
+        var clr = tinycolor(obj.value).toRgb();
+         mqttpub(obj.name, clr.r+","+clr.g+","+clr.b);
+     }
      
      function setColor(obj) {
-        mqttpub(obj.name, JSON.stringify(getJsonColor(obj)));
+        mqttpubnsave(obj.name, JSON.stringify(getJsonColor(obj)));
      }
      
      function cc(c) {
@@ -349,7 +377,7 @@
         var json = {gradient:($("#gradient").is(":checked") ? 1 : 0), gradtime:parseInt($("#gradtime").prop("value")), gradsteps:parseInt($("#gradsteps").prop("value")), gradloop:1};
         var fromcolor = getJsonColor($("#fromcolor")[0]);
         var tocolor = getJsonColor($("#tocolor")[0]);
-        mqttpub(obj.name, JSON.stringify($.extend(json, fromcolor, tocolor)));
+        mqttpubnsave(obj.name, JSON.stringify($.extend(json, fromcolor, tocolor)));
      }
      
      function getCurtainCommand(id) {
@@ -361,7 +389,7 @@
      }
      
      function processCurtain(obj) {
-        mqttpub(obj.name, getCurtainCommand(obj.id));
+        mqttpubnsave(obj.name, getCurtainCommand(obj.id));
      }
 
      function buildCommandSelect(container, topic) {

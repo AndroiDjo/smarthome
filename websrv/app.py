@@ -31,6 +31,13 @@ def mqttpub():
     req_t = request.args.get('topic')
     req_m = request.args.get('msg')
     client.publish(req_t, req_m)
+    return jsonify({"response":"OK"})
+
+@app.route('/mqttpubnsave')
+def mqttpubnsave():
+    req_t = request.args.get('topic')
+    req_m = request.args.get('msg')
+    client.publish(req_t, req_m)
     conf.update_config(req_t, json.loads(req_m))
     return jsonify({"response":"OK"})
 
