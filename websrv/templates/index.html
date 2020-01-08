@@ -175,9 +175,16 @@
         <input type="color" id="gyvercolorinput" name="homeassistant/light/ESP-e481f9/rgb/set" onchange="gyvercolor(this)">
         <label for="gyvercolorinput">Цвет</label>
     </div>
-    <button class="purple" onclick="$('#gyverlampblock').slideToggle('slow');">Режимы</button>
+    <button class="purple small" onclick="$('#gyverlampblock').slideToggle('slow');">Режимы</button>
     <div id="gyverlampblock" style="display: none;">
         <iframe src="http://192.168.1.66/" width="100%" height="500px"></iframe>
+    </div>
+    <div class="row">
+        <div class="group">
+            <input id="runningTextId" type="text" name="runningText" required=" " value="">
+            <label for="runningText">Бегущая строка</label>
+        </div>
+        <button class="purple small" onclick="runningText()">Отправить</button>
     </div>
 
     <a name="aschedule"><br/><br/></a>
@@ -490,6 +497,10 @@
                 $(container).append($('<li>').html("<b>"+dictLocations[json[keytag].location]+":</b> температура: "+json[keytag].temperature+"; влажность: "+json[keytag].humidity+"%; время замера: "+json[keytag].date));
             }
         }
+     }
+
+     function runningText() {
+        mqttpub("homeassistant/light/ESP-e481f9/text/set",$("#runningTextId").val());
      }
 
      jQuery(document).ready(function(){
