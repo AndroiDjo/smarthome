@@ -60,6 +60,8 @@
   <li class="-icon"><a href="#" onclick="document.getElementById('topNav').classList.toggle('res');">&equiv;</a></li>
  </ul>
 
+    <div class="container">
+    
     <a name="sensor"><br/><br/></a>
     <h1>Датчики</h1>
     <ul id="sensorContainer" class="l-g"></ul>
@@ -197,8 +199,12 @@
 
     <a name="aschedule"><br/><br/></a>
     <h1>Расписание</h1>
-    <table id="scheduleTable"></table>
-    
+    <div class="overflow">
+        <table id="scheduleTable"></table>
+    </div>
+
+    </div>
+
     <div id="configs" hidden>{{config}}</div> 
     <div id="schedule" hidden>{{schedule}}</div>
     <div id="sensors" hidden>{{sensors}}</div>

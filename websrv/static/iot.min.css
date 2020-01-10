@@ -1286,3 +1286,11 @@ tr:hover {
   cursor: pointer;
   display: block
 }
+
+.overflow {
+  overflow: auto;
+}
+
+.container {
+  padding: 10px;
+}
