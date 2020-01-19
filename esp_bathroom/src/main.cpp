@@ -9,6 +9,9 @@
 const char* privateFile = "/private.json"; // файл для хранения учетных данных
 const char* configFile = "/config.json"; // файл для хранения настроек модуля
 const int jsonSize = 1024; // размер буфера для парсинга json
+const uint8_t LED1 = D5;
+const uint8_t LED2 = D6;
+const uint8_t FAN = D7;
 
 // учетные данные Mosquitto
 struct Mqtt {
@@ -25,6 +28,11 @@ struct Ota {
 };
 
 bool shouldSaveConfig = false;
+bool power = true;
+bool fan = false;
+int ledpwm = 1023;
+int delayCounter = 0;
+int delayLimit = 20;
 
 WiFiClient espClient;
 PubSubClient client(espClient);
@@ -76,9 +84,9 @@ void initPrivate() {
   Serial.println("Private settings loaded successfully");
 }
 
-void saveJsonParams(JsonObject& json) {
+void saveJsonParams(const JsonObject& json) {
    bool existconfig = false;
-   DynamicJsonDocument doc(jsonSize);
+   StaticJsonDocument<512> doc;
    File file = SPIFFS.open(configFile, "r");
    if (file) {
       DeserializationError error = deserializeJson(doc, file);
@@ -108,22 +116,63 @@ void saveJsonParams(JsonObject& json) {
    destFile.close();
 }
 
+void switchLed() {
+  if (power) {
+    analogWrite(LED1, ledpwm);
+    analogWrite(LED2, ledpwm);
+  } else
+  {
+    analogWrite(LED1, 0);
+    analogWrite(LED2, 0);
+  }
+}
+
+void switchFan() {
+  if (fan) {
+    digitalWrite(FAN, 1);
+  } else {
+    digitalWrite(FAN, 0);
+  }
+}
+
+// обработка json команд
+void parseRequest(const JsonDocument& doc) {
+  if (doc.containsKey("ledpwm")) {
+    ledpwm = doc["ledpwm"];
+    switchLed();
+  }
+
+  if (doc.containsKey("fan")) {
+    fan = doc["fan"];
+    switchFan();
+  }
+
+  if (doc.containsKey("power")) {
+    power = doc["power"];
+    switchLed();
+  }
+}
+
 // обработчик MQTT команд
 void callback(char* topic, byte* payload, unsigned int length) {
-  DynamicJsonDocument doc(jsonSize);
+  StaticJsonDocument<512> doc;
   DeserializationError error = deserializeJson(doc, payload, length);
   if (error) {
     Serial.println("Failed to dsrlz mqtt message");
+  } else {
+    serializeJsonPretty(doc, Serial);
   }
 
-  //parseRequest(doc);
-  JsonObject jobj = doc.as<JsonObject>();
-  saveJsonParams(jobj);
+  parseRequest(doc);
+  //JsonObject jobj = doc.as<JsonObject>();
+  //saveJsonParams(jobj);
 }
 
 // переподключение к MQTT брокеру
 void reconnect() {
   while (!client.connected()) {
+    yield();
+    delay(100);
     Serial.print("Attempting MQTT connection...");
     if (client.connect("nodemcu_bathroom", mqtt.login, mqtt.pass)) {
       Serial.println("nodemcu_bathroom connected");
@@ -138,7 +187,19 @@ void reconnect() {
   }
 }
 
+void delayLoop() {
+  delayCounter++;
+  if (delayCounter > delayLimit) {
+    delayCounter = 0;
+    yield();
+    delay(1);
+  }
+}
+
 void setup() {
+  pinMode(LED1, OUTPUT);
+  pinMode(LED2, OUTPUT);
+  pinMode(FAN, OUTPUT);
   Serial.begin(115200);
   WiFiManager wifiManager;
   //wifiManager.resetSettings();
@@ -235,5 +296,8 @@ void setup() {
 
 void loop() {
     ArduinoOTA.handle();
-    delay(50);
+    if (!client.connected())
+    reconnect();
+    client.loop();
+    delayLoop();
 }
