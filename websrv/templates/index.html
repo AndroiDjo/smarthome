@@ -212,7 +212,7 @@
      /*************CONSTANT*BEGIN***********/
      var dictSchedulePeriod = {daily:"Ежедневно",workday:"Рабочие дни",weekend:"Выходные дни",hour:"Каждый час",minute:"Каждую минуту",second:"Каждую секунду"};
      var dictCommands = {'curtain/hall':{'name':'Шторы зал','commands':[{'name':'Закрыть шторы','command':'{"curtain":true,"stepmoveto":19300}','tag':'curtainhallcloseschedule'},{'name':'Открыть шторы','command':'{"curtain":false,"stepmoveto":19000}','tag':'curtainhallopenschedule'}]},'curtain/childroom':{'name':'Шторы детская','commands':[{'name':'Закрыть шторы','command':'{"curtain":true,"stepmoveto":20900}','tag':'curtainchildcloseschedule'},{'name':'Открыть шторы','command':'{"curtain":false,"stepmoveto":20000}','tag':'curtainchildopenschedule'}]},'lightcloud/childroom':{'name':'Тучка','commands':[{'name':'Включить','command':'{"power":true}','tag':'childcloudonschedule'},{'name':'Выключить','command':'{"power":false}','tag':'childcloudoffschedule'}]},'light/hall':{'name':'Свет зал','commands':[{'name':'Включить','command':'{"power":true}','tag':'halllightonschedule'},{'name':'Выключить','command':'{"power":false}','tag':'halllightoffschedule'}]},'sensor/req':{'name':'Датчики','commands':[{'name':'Получить данные','command':'{"getall":1}','tag':'allsensorsgetschedule'}]}};
-     var dictLocations = {childroom:"Детская", hall:"Зал"};
+     var dictLocations = {childroom:"Детская", hall:"Зал", bathroom:"Ванная"};
      var cmdContainerId = 'tdCommandContainer';
      var tdCommandId = 'tdCommandId';
      var tdSelectTopicId = 'tdSelectTopicId';

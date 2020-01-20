@@ -5,13 +5,19 @@
 #include <ESP8266WiFi.h>
 #include <PubSubClient.h>
 #include <ArduinoOTA.h>
+#include <DHT.h>
+#include <DHT_U.h>
+
+#define DHTTYPE DHT11
 
 const char* privateFile = "/private.json"; // файл для хранения учетных данных
 const char* configFile = "/config.json"; // файл для хранения настроек модуля
 const int jsonSize = 1024; // размер буфера для парсинга json
-const uint8_t LED1 = D5;
-const uint8_t LED2 = D6;
-const uint8_t FAN = D7;
+const uint8_t LED1_PIN = D5;
+const uint8_t LED2_PIN = D6;
+const uint8_t FAN_PIN = D7;
+const uint8_t HALL_PIN = D1;
+const uint8_t TEMP_PIN = D2;
 
 // учетные данные Mosquitto
 struct Mqtt {
@@ -28,14 +34,17 @@ struct Ota {
 };
 
 bool shouldSaveConfig = false;
+bool tempSensorCallback = false; // колбэк для публикации данных с датчика температуры
 bool power = true;
 bool fan = false;
 int ledpwm = 1023;
 int delayCounter = 0;
 int delayLimit = 20;
+uint32_t delayMS;
 
 WiFiClient espClient;
 PubSubClient client(espClient);
+DHT_Unified dht(TEMP_PIN, DHTTYPE);
 Mqtt mqtt;
 Ota ota;
 
@@ -118,21 +127,48 @@ void saveJsonParams(const JsonObject& json) {
 
 void switchLed() {
   if (power) {
-    analogWrite(LED1, ledpwm);
-    analogWrite(LED2, ledpwm);
+    analogWrite(LED1_PIN, ledpwm);
+    analogWrite(LED2_PIN, ledpwm);
   } else
   {
-    analogWrite(LED1, 0);
-    analogWrite(LED2, 0);
+    analogWrite(LED1_PIN, 0);
+    analogWrite(LED2_PIN, 0);
   }
 }
 
 void switchFan() {
   if (fan) {
-    digitalWrite(FAN, 1);
+    digitalWrite(FAN_PIN, 1);
   } else {
-    digitalWrite(FAN, 0);
+    digitalWrite(FAN_PIN, 0);
   }
+}
+
+void getTemp() {
+  tempSensorCallback = false;
+  StaticJsonDocument<256> doc;
+  sensors_event_t event;
+  const char* clientid = "bathroomtemp";
+  doc[clientid]["kind"] = "temperature";
+  doc[clientid]["location"] = "bathroom";
+  dht.temperature().getEvent(&event);
+  if (isnan(event.temperature)) {
+    Serial.println(F("Error reading temperature!"));
+  }
+  else {
+    doc[clientid]["temperature"] = event.temperature;
+  }
+  dht.humidity().getEvent(&event);
+  if (isnan(event.relative_humidity)) {
+    Serial.println(F("Error reading humidity!"));
+  }
+  else {
+    doc[clientid]["humidity"] = event.relative_humidity;
+  }
+  char buffer[512];
+  size_t n = serializeJson(doc, buffer);
+  client.publish("sensor/resp", buffer, n);
+  delay(1000);
 }
 
 // обработка json команд
@@ -145,6 +181,10 @@ void parseRequest(const JsonDocument& doc) {
   if (doc.containsKey("fan")) {
     fan = doc["fan"];
     switchFan();
+  }
+
+  if (doc.containsKey("gettemp") || doc.containsKey("getall")) {
+    tempSensorCallback = true;
   }
 
   if (doc.containsKey("power")) {
@@ -177,7 +217,9 @@ void reconnect() {
     if (client.connect("nodemcu_bathroom", mqtt.login, mqtt.pass)) {
       Serial.println("nodemcu_bathroom connected");
       client.subscribe("all/modules");
+      client.subscribe("all/light");
       client.subscribe("light/bathroom");
+      client.subscribe("sensor/req");
     } else {
       Serial.print("failed, rc=");
       Serial.print(client.state());
@@ -197,10 +239,12 @@ void delayLoop() {
 }
 
 void setup() {
-  pinMode(LED1, OUTPUT);
-  pinMode(LED2, OUTPUT);
-  pinMode(FAN, OUTPUT);
   Serial.begin(115200);
+  pinMode(LED1_PIN, OUTPUT);
+  pinMode(LED2_PIN, OUTPUT);
+  pinMode(FAN_PIN, OUTPUT);
+  pinMode(HALL_PIN, INPUT);
+  dht.begin();
   WiFiManager wifiManager;
   //wifiManager.resetSettings();
   WiFiManagerParameter custom_mqtt_title("<br>MQTT configuration:");
@@ -249,6 +293,30 @@ void setup() {
   } else {
     initPrivate();
   }
+
+  sensor_t sensor;
+  dht.temperature().getSensor(&sensor);
+  Serial.println(F("------------------------------------"));
+  Serial.println(F("Temperature Sensor"));
+  Serial.print  (F("Sensor Type: ")); Serial.println(sensor.name);
+  Serial.print  (F("Driver Ver:  ")); Serial.println(sensor.version);
+  Serial.print  (F("Unique ID:   ")); Serial.println(sensor.sensor_id);
+  Serial.print  (F("Max Value:   ")); Serial.print(sensor.max_value); Serial.println(F("°C"));
+  Serial.print  (F("Min Value:   ")); Serial.print(sensor.min_value); Serial.println(F("°C"));
+  Serial.print  (F("Resolution:  ")); Serial.print(sensor.resolution); Serial.println(F("°C"));
+  Serial.println(F("------------------------------------"));
+  // Print humidity sensor details.
+  dht.humidity().getSensor(&sensor);
+  Serial.println(F("Humidity Sensor"));
+  Serial.print  (F("Sensor Type: ")); Serial.println(sensor.name);
+  Serial.print  (F("Driver Ver:  ")); Serial.println(sensor.version);
+  Serial.print  (F("Unique ID:   ")); Serial.println(sensor.sensor_id);
+  Serial.print  (F("Max Value:   ")); Serial.print(sensor.max_value); Serial.println(F("%"));
+  Serial.print  (F("Min Value:   ")); Serial.print(sensor.min_value); Serial.println(F("%"));
+  Serial.print  (F("Resolution:  ")); Serial.print(sensor.resolution); Serial.println(F("%"));
+  Serial.println(F("------------------------------------"));
+  // Set delay between sensor readings based on sensor details.
+  delayMS = sensor.min_delay / 1000;
 
   // инициализация обновления по воздуху
   ArduinoOTA.setPort(ota.port);
@@ -299,5 +367,6 @@ void loop() {
     if (!client.connected())
     reconnect();
     client.loop();
+    if (tempSensorCallback) getTemp();
     delayLoop();
 }
