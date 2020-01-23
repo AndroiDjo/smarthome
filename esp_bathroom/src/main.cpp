@@ -16,8 +16,10 @@ const int jsonSize = 1024; // размер буфера для парсинга 
 const uint8_t LED1_PIN = D5;
 const uint8_t LED2_PIN = D6;
 const uint8_t FAN_PIN = D7;
-const uint8_t HALL_PIN = D1;
-const uint8_t TEMP_PIN = D2;
+const uint8_t HALL_PIN = D4;
+const uint8_t TEMP_PIN = D3;
+const uint8_t MOTION_ROOM_PIN = D2;
+const uint8_t MOTION_DOOR_PIN = D1;
 
 // учетные данные Mosquitto
 struct Mqtt {
@@ -41,6 +43,8 @@ int ledpwm = 1023;
 int delayCounter = 0;
 int delayLimit = 20;
 uint32_t delayMS;
+long sensorTime = millis();
+int timeInterval = 1000;
 
 WiFiClient espClient;
 PubSubClient client(espClient);
@@ -128,11 +132,11 @@ void saveJsonParams(const JsonObject& json) {
 void switchLed() {
   if (power) {
     analogWrite(LED1_PIN, ledpwm);
-    analogWrite(LED2_PIN, ledpwm);
+    //analogWrite(LED2_PIN, ledpwm);
   } else
   {
     analogWrite(LED1_PIN, 0);
-    analogWrite(LED2_PIN, 0);
+    //analogWrite(LED2_PIN, 0);
   }
 }
 
@@ -142,6 +146,26 @@ void switchFan() {
   } else {
     digitalWrite(FAN_PIN, 0);
   }
+}
+
+void checkSensors() {
+  if (digitalRead(MOTION_ROOM_PIN) == HIGH) {
+    sensorTime = millis();
+  }
+
+  digitalWrite(LED2_PIN, digitalRead(MOTION_DOOR_PIN));
+
+  if (digitalRead(HALL_PIN) == LOW) {
+    fan = true;
+  } else {
+    fan = false;
+  }
+}
+
+void switchDevices() {
+  power = ((millis() - sensorTime) < timeInterval);
+  switchLed();
+  switchFan();
 }
 
 void getTemp() {
@@ -244,6 +268,8 @@ void setup() {
   pinMode(LED2_PIN, OUTPUT);
   pinMode(FAN_PIN, OUTPUT);
   pinMode(HALL_PIN, INPUT);
+  pinMode(MOTION_ROOM_PIN, INPUT);
+  pinMode(MOTION_DOOR_PIN, INPUT);
   dht.begin();
   WiFiManager wifiManager;
   //wifiManager.resetSettings();
@@ -368,5 +394,7 @@ void loop() {
     reconnect();
     client.loop();
     if (tempSensorCallback) getTemp();
+    checkSensors();
+    switchDevices();
     delayLoop();
 }
