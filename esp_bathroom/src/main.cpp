@@ -38,19 +38,42 @@ struct Ota {
 bool shouldSaveConfig = false;
 bool tempSensorCallback = false; // колбэк для публикации данных с датчика температуры
 bool power = true;
+bool powerlow = false;
 bool fan = false;
+bool manualMode = false;
 int ledpwm = 1023;
+int ledpwmLow = 100;
+int curpwm = 0;
 int delayCounter = 0;
 int delayLimit = 20;
 uint32_t delayMS;
-long sensorTime = millis();
-int timeInterval = 1000;
+long roomSensorTime = millis();
+long doorSensorTime = millis();
+int shortInterval = 300;
+int longInterval = 5000;
+int fadeSteps = 50;
+int fadeInterval = 10;
 
 WiFiClient espClient;
 PubSubClient client(espClient);
 DHT_Unified dht(TEMP_PIN, DHTTYPE);
 Mqtt mqtt;
 Ota ota;
+
+void fade(int from, int to) {
+  if (from == to || abs(to - from) <= 5) return;
+  curpwm = from;
+  int curstep = 0;
+  int delta = (to - from) / fadeSteps;
+  while (curstep < fadeSteps) {
+    curpwm += delta;
+    analogWrite(LED1_PIN, curpwm);
+    analogWrite(LED2_PIN, curpwm);
+    curstep++;
+    delay(fadeInterval);
+  }
+  
+}
 
 void savePrivateParams() {
    bool existconfig = false;
@@ -131,12 +154,10 @@ void saveJsonParams(const JsonObject& json) {
 
 void switchLed() {
   if (power) {
-    analogWrite(LED1_PIN, ledpwm);
-    //analogWrite(LED2_PIN, ledpwm);
+    fade(curpwm, ledpwm);
   } else
   {
-    analogWrite(LED1_PIN, 0);
-    //analogWrite(LED2_PIN, 0);
+    fade(curpwm, 0);
   }
 }
 
@@ -149,11 +170,18 @@ void switchFan() {
 }
 
 void checkSensors() {
+  if (manualMode) return;
   if (digitalRead(MOTION_ROOM_PIN) == HIGH) {
-    sensorTime = millis();
+    roomSensorTime = millis();
   }
+  power = ((millis() - roomSensorTime) < longInterval);
 
-  digitalWrite(LED2_PIN, digitalRead(MOTION_DOOR_PIN));
+  if (digitalRead(MOTION_DOOR_PIN) == HIGH) {
+    doorSensorTime = millis();
+  }
+  if (!power) {
+    power = ((millis() - doorSensorTime) < shortInterval);
+  }
 
   if (digitalRead(HALL_PIN) == LOW) {
     fan = true;
@@ -163,7 +191,6 @@ void checkSensors() {
 }
 
 void switchDevices() {
-  power = ((millis() - sensorTime) < timeInterval);
   switchLed();
   switchFan();
 }
@@ -205,6 +232,10 @@ void parseRequest(const JsonDocument& doc) {
   if (doc.containsKey("fan")) {
     fan = doc["fan"];
     switchFan();
+  }
+
+  if (doc.containsKey("manualmode")) {
+    manualMode = doc["manualmode"];
   }
 
   if (doc.containsKey("gettemp") || doc.containsKey("getall")) {
