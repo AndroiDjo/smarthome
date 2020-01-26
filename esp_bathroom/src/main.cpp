@@ -12,7 +12,6 @@
 
 const char* privateFile = "/private.json"; // файл для хранения учетных данных
 const char* configFile = "/config.json"; // файл для хранения настроек модуля
-const int jsonSize = 1024; // размер буфера для парсинга json
 const uint8_t LED1_PIN = D5;
 const uint8_t LED2_PIN = D6;
 const uint8_t FAN_PIN = D7;
@@ -49,7 +48,7 @@ int delayLimit = 20;
 uint32_t delayMS;
 long roomSensorTime = millis();
 long doorSensorTime = millis();
-int shortInterval = 300;
+int shortInterval = 1000;
 int longInterval = 5000;
 int fadeSteps = 50;
 int fadeInterval = 10;
@@ -59,21 +58,6 @@ PubSubClient client(espClient);
 DHT_Unified dht(TEMP_PIN, DHTTYPE);
 Mqtt mqtt;
 Ota ota;
-
-void fade(int from, int to) {
-  if (from == to || abs(to - from) <= 5) return;
-  curpwm = from;
-  int curstep = 0;
-  int delta = (to - from) / fadeSteps;
-  while (curstep < fadeSteps) {
-    curpwm += delta;
-    analogWrite(LED1_PIN, curpwm);
-    analogWrite(LED2_PIN, curpwm);
-    curstep++;
-    delay(fadeInterval);
-  }
-  
-}
 
 void savePrivateParams() {
    bool existconfig = false;
@@ -120,41 +104,28 @@ void initPrivate() {
   Serial.println("Private settings loaded successfully");
 }
 
-void saveJsonParams(const JsonObject& json) {
-   bool existconfig = false;
-   StaticJsonDocument<512> doc;
-   File file = SPIFFS.open(configFile, "r");
-   if (file) {
-      DeserializationError error = deserializeJson(doc, file);
-      if (error) {
-        file.close();
-        Serial.println("Failed to dsrlz config file");
-      }
-      file.close();
-      for (JsonPair kv : json) {
-        doc[kv.key()] = kv.value();
-      }
-      existconfig = true;
-   }
-
-   File destFile = SPIFFS.open(configFile, "w");
-   bool srlzbool;
-   if (existconfig) {
-     srlzbool = (serializeJson(doc, destFile) == 0);
-   } else {
-     Serial.println("config file not found, create new");
-     srlzbool = (serializeJson(json, destFile) == 0);
-   }
-   if (srlzbool) {
-    destFile.close();
-    Serial.println("Failed to write to config file");
-   }
-   destFile.close();
+void fade(int from, int to) {
+  if (from == to || abs(to - from) <= 5) return;
+  curpwm = from;
+  int curstep = 0;
+  int delta = (to - from) / fadeSteps;
+  while (curstep < fadeSteps) {
+    curpwm += delta;
+    analogWrite(LED1_PIN, curpwm);
+    analogWrite(LED2_PIN, curpwm);
+    curstep++;
+    delay(fadeInterval);
+  }
+  
 }
 
 void switchLed() {
   if (power) {
-    fade(curpwm, ledpwm);
+    if (powerlow) {
+      fade(curpwm, ledpwmLow);
+    } else {
+      fade(curpwm, ledpwm);
+    }
   } else
   {
     fade(curpwm, 0);
@@ -169,30 +140,38 @@ void switchFan() {
   }
 }
 
+void checkLowLight(long deltaTime, int timeInterval) {
+  if (power && !fan && (timeInterval - deltaTime) < (timeInterval / 10))   {
+    powerlow = true;
+  } else {
+    powerlow = false;
+  }
+}
+
 void checkSensors() {
   if (manualMode) return;
   if (digitalRead(MOTION_ROOM_PIN) == HIGH) {
     roomSensorTime = millis();
   }
-  power = ((millis() - roomSensorTime) < longInterval);
+  long deltaTime = millis() - roomSensorTime;
+  power = (deltaTime < longInterval);
+  checkLowLight(deltaTime, longInterval);
 
   if (digitalRead(MOTION_DOOR_PIN) == HIGH) {
     doorSensorTime = millis();
   }
   if (!power) {
-    power = ((millis() - doorSensorTime) < shortInterval);
+    deltaTime = millis() - doorSensorTime;
+    power = (deltaTime < shortInterval);
+    checkLowLight(deltaTime, shortInterval);
   }
 
   if (digitalRead(HALL_PIN) == LOW) {
     fan = true;
+    doorSensorTime = millis();
   } else {
     fan = false;
   }
-}
-
-void switchDevices() {
-  switchLed();
-  switchFan();
 }
 
 void getTemp() {
@@ -226,12 +205,10 @@ void getTemp() {
 void parseRequest(const JsonDocument& doc) {
   if (doc.containsKey("ledpwm")) {
     ledpwm = doc["ledpwm"];
-    switchLed();
   }
 
   if (doc.containsKey("fan")) {
     fan = doc["fan"];
-    switchFan();
   }
 
   if (doc.containsKey("manualmode")) {
@@ -242,10 +219,67 @@ void parseRequest(const JsonDocument& doc) {
     tempSensorCallback = true;
   }
 
+  if (doc.containsKey("shorti")) {
+    shortInterval = doc["shorti"];
+  }
+
+  if (doc.containsKey("longi")) {
+    longInterval = doc["longi"];
+  }
+
   if (doc.containsKey("power")) {
     power = doc["power"];
-    switchLed();
   }
+}
+
+void saveJsonParams(const JsonObject& json) {
+   bool existconfig = false;
+   StaticJsonDocument<512> doc;
+   File file = SPIFFS.open(configFile, "r");
+   if (file) {
+      DeserializationError error = deserializeJson(doc, file);
+      if (error) {
+        file.close();
+        Serial.println("Failed to dsrlz config file");
+      }
+      file.close();
+      for (JsonPair kv : json) {
+        doc[kv.key()] = kv.value();
+      }
+      existconfig = true;
+   }
+
+   File destFile = SPIFFS.open(configFile, "w");
+   bool srlzbool;
+   if (existconfig) {
+     srlzbool = (serializeJson(doc, destFile) == 0);
+   } else {
+     Serial.println("config file not found, create new");
+     srlzbool = (serializeJson(json, destFile) == 0);
+   }
+   if (srlzbool) {
+    destFile.close();
+    Serial.println("Failed to write to config file");
+   }
+   destFile.close();
+}
+
+// загрузка json параметров из SPIFFS
+void loadJsonParams() {
+   File file = SPIFFS.open(configFile, "r");
+   StaticJsonDocument<512> doc;
+   if (file) {
+     DeserializationError error = deserializeJson(doc, file);
+     if (error) {
+      file.close();
+      Serial.println("loadJsonParams: Failed to dsrlz config file");
+     }
+     file.close();
+     serializeJsonPretty(doc, Serial);
+     parseRequest(doc);
+   } else {
+     Serial.println("loadJsonParams: config file not found");
+   }
 }
 
 // обработчик MQTT команд
@@ -259,8 +293,8 @@ void callback(char* topic, byte* payload, unsigned int length) {
   }
 
   parseRequest(doc);
-  //JsonObject jobj = doc.as<JsonObject>();
-  //saveJsonParams(jobj);
+  JsonObject jobj = doc.as<JsonObject>();
+  saveJsonParams(jobj);
 }
 
 // переподключение к MQTT брокеру
@@ -416,7 +450,7 @@ void setup() {
   if (!client.connected()) {
     reconnect();
   }
-  //loadJsonParams();
+  loadJsonParams();
 }
 
 void loop() {
@@ -426,6 +460,7 @@ void loop() {
     client.loop();
     if (tempSensorCallback) getTemp();
     checkSensors();
-    switchDevices();
+    switchLed();
+    switchFan();
     delayLoop();
 }
