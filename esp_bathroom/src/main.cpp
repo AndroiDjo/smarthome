@@ -52,6 +52,8 @@ int shortInterval = 1000;
 int longInterval = 5000;
 int fadeSteps = 50;
 int fadeInterval = 10;
+int fanDelay = 3000;
+long fanLastDisableTime = millis();
 
 WiFiClient espClient;
 PubSubClient client(espClient);
@@ -167,10 +169,15 @@ void checkSensors() {
   }
 
   if (digitalRead(HALL_PIN) == LOW) {
-    fan = true;
-    doorSensorTime = millis();
+    if (millis() - fanLastDisableTime > fanDelay) {
+      fan = true;
+      doorSensorTime = millis();
+    } else {
+      fan = false;
+    }
   } else {
     fan = false;
+    fanLastDisableTime = millis();
   }
 }
 
