@@ -48,7 +48,7 @@ int delayLimit = 20;
 uint32_t delayMS;
 long roomSensorTime = millis();
 long doorSensorTime = millis();
-int shortInterval = 30000;
+int shortInterval = 10000;
 int longInterval = 120000;
 int fadeSteps = 50;
 int fadeInterval = 10;

@@ -108,6 +108,28 @@
         <input type="checkbox" class="checkbox" name="lightcloud/childroom" id="lightcloudchildroomclap" onchange="switchCheckBox(this)" data-command="clap" />
         <label for="lightcloudchildroomclap">Детская: Переключение по хлопку</label>
     </div>
+    <div class="group">
+        <input type="range" min="0" max="1023" value="1023" onchange="setBrightness(this)" name="light/bathroom" data-command="ledpwm" />
+        <label>Ванная: яркость</label>
+    </div>
+    <div class="group">
+        <input type="number" name="light/bathroom" id="lightbathinterval" data-multiplier="60000" data-command="longi" min="1" max="255" value="" onchange="editInput(this)" />
+        <label for="lightbathinterval">Ванная: время свечения, мин.</label>
+    </div>
+    <div class="s12 m4 group">
+        <input type="checkbox" class="checkbox" name="light/bathroom" id="bathmanualcheckbox" onchange="bathManualModeSwitch(this)" data-command="manualmode" />
+        <label for="bathmanualcheckbox">Ванная: ручное управление</label>
+    </div>
+    <div id="lightbathroomblock" style="display: none;">
+        <div class="s12 m4 group">
+            <input type="checkbox" class="checkbox" name="light/bathroom" id="lightbathpower" onchange="switchCheckBox(this)" data-command="power" />
+            <label for="lightbathpower">Ванная: свет</label>
+        </div>
+        <div class="s12 m4 group">
+            <input type="checkbox" class="checkbox" name="light/bathroom" id="lightbathfan" onchange="switchCheckBox(this)" data-command="fan" />
+            <label for="lightbathfan">Ванная: вытяжка</label>
+        </div>
+    </div>
     
     <a name="split"><br/><br/></a>
     <h1>Сплит</h1>
@@ -154,11 +176,11 @@
             <label for="fromcolor">с цвета</label>
         </div>
         <div class="group">
-            <input type="number" name="rgb/kitchen" id="gradtime" data-multiplier="1" required=" " min="10" value="" onchange="processGradient(this)" />
+            <input type="number" name="rgb/kitchen" id="gradtime" data-command="gradtime" data-multiplier="1" required=" " min="10" value="" onchange="processGradient(this)" />
             <label for="gradtime">Время градиента, мс</label>
         </div>
         <div class="group">
-            <input type="number" name="rgb/kitchen" id="gradsteps" data-multiplier="1" required=" " min="1" value="" onchange="processGradient(this)" />
+            <input type="number" name="rgb/kitchen" id="gradsteps" data-command="gradsteps" data-multiplier="1" required=" " min="1" value="" onchange="processGradient(this)" />
             <label for="gradsteps">Количество шагов градиента</label>
         </div> 
     </div>
@@ -167,7 +189,7 @@
         <label for="rgbkitchendetectmove">Датчик движения</label>
     </div> 
     <div class="group">
-        <input type="number" name="rgb/kitchen" id="delaymove" data-multiplier="60000000" required=" " min="0" max="255" value="" onchange="editInput(this)" />
+        <input type="number" name="rgb/kitchen" id="delaymove" data-multiplier="60000000" data-command="delaymove" min="1" max="255" value="" onchange="editInput(this)" />
         <label for="delaymove">Автоотключение, мин.</label>
     </div>
 
@@ -251,7 +273,7 @@
          
          $("input[type=number]").each(function(index){
              try {
-                this.value = parseInt(config[this.name][this.id]) / parseInt(this.dataset.multiplier);
+                this.value = parseInt(config[this.name][this.dataset.command]) / parseInt(this.dataset.multiplier);
              } catch (e) {
                 console.log('Ошибка ' + e.name + ":" + e.message + "\n" + e.stack);
              }
@@ -283,6 +305,10 @@
 
          if (config["rgb/kitchen"].gradient == 1) {
             $("#rgbkitchengradientblock").slideToggle('slow');
+         }
+
+         if (config["light/bathroom"].manualmode == 1) {
+            $("#lightbathroomblock").slideToggle('slow');
          }
          
      }
@@ -348,6 +374,12 @@
         }
         mqttpubnsave(obj.name, JSON.stringify(json));
      }
+
+     function setBrightness(obj) {
+        var json = {}
+        json[obj.dataset.command] = obj.value;
+        mqttpubnsave(obj.name, JSON.stringify(json));
+     }
      
      function processSplit(obj) {
         irsend(obj.name, obj.id);
@@ -356,8 +388,7 @@
      function editInput(obj) {
         var json = {}
         var mlt = parseInt(obj.dataset.multiplier);
-        json[obj.id] = parseInt(obj.value) * mlt;
-        config[obj.name][obj.id] = json[obj.id]
+        json[obj.dataset.command] = parseInt(obj.value) * mlt;
         mqttpubnsave(obj.name, JSON.stringify(json));
      }
      
@@ -399,6 +430,11 @@
         var fromcolor = getJsonColor($("#fromcolor")[0]);
         var tocolor = getJsonColor($("#tocolor")[0]);
         mqttpubnsave(obj.name, JSON.stringify($.extend(json, fromcolor, tocolor)));
+     }
+
+     function bathManualModeSwitch(obj) {
+        $("#lightbathroomblock").slideToggle('slow');
+        switchCheckBox(obj);
      }
      
      function getCurtainCommand(id) {
