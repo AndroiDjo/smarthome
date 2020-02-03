@@ -48,8 +48,8 @@ int delayLimit = 20;
 uint32_t delayMS;
 long roomSensorTime = millis();
 long doorSensorTime = millis();
-int shortInterval = 1000;
-int longInterval = 5000;
+int shortInterval = 30000;
+int longInterval = 120000;
 int fadeSteps = 50;
 int fadeInterval = 10;
 int fanDelay = 3000;
@@ -143,7 +143,9 @@ void switchFan() {
 }
 
 void checkLowLight(long deltaTime, int timeInterval) {
-  if (power && !fan && (timeInterval - deltaTime) < (timeInterval / 10))   {
+  if (power && !fan && 
+     (timeInterval - deltaTime) < (timeInterval / 10) &&
+     ledpwm > ledpwmLow)   {
     powerlow = true;
   } else {
     powerlow = false;
