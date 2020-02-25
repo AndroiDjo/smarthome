@@ -50,6 +50,7 @@ def main():
     filename = "rec."+str(maxnum)+".wav"
     p = pyaudio.PyAudio()  # Create an interface to PortAudio
     print('Recording')
+    print(recordText)
 
     stream = p.open(format=sample_format,
                     channels=channels,
@@ -86,7 +87,7 @@ def main():
     existText = False
     with open("vocabulary.txt", "r") as f:
         for line in f:
-            if line == recordText:
+            if line.strip() == recordText:
                 existText = True
                 break
 
@@ -95,6 +96,6 @@ def main():
             f.write(recordText+"\n")
 
     print(filename+" written to "+outputFile)
-    print(recordText)
+    
 if __name__ == "__main__":
    main()
