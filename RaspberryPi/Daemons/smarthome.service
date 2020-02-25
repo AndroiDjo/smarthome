@@ -4,7 +4,7 @@ Wants=network-online.target
 After=network-online.target mosquitto.service
 
 [Service]
-ExecStart=/usr/bin/python3 -u app.py
+ExecStart="/home/pi/.pyenv/versions/3.7.6/bin/python3" -u app.py
 Restart=always
 User=pi
 # Note Debian/Ubuntu uses 'nogroup', RHEL/Fedora uses 'nobody'
