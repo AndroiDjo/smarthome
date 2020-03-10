@@ -17,11 +17,14 @@ secpersym = 0.13
 
 def fileContainText(filename, text):
     existText = False
-    with open(filename, "r") as f:
-        for line in f:
-            if line.strip() == text:
-                existText = True
-                break
+    try:
+        with open(filename, "r") as f:
+            for line in f:
+                if line.strip() == text:
+                    existText = True
+                    break
+    except FileNotFoundError:
+        existText = False
     return existText
 
 def getNextWavName():
@@ -33,13 +36,18 @@ def getNextWavName():
                 maxnum = filenum
     return "rec."+str(maxnum + 1)+".wav"
 
-def record(recLen, delay, text, outputCsv, needConfirm):
+def record(reclen, delay, text, outputcsv, needconfirm, singlesentence):
     textLen = len(text)
 
     if textLen == 0:
         raise ValueError('Text cannot be null')
 
-    recLength = recLen
+    if singlesentence:
+        if fileContainText(vocabulary, text):
+            print(vocabulary+" already contains: "+text)
+            return
+
+    recLength = reclen
     if recLength == 0:
         recLength = textLen * secpersym
     if recLength < 2:
@@ -69,24 +77,20 @@ def record(recLen, delay, text, outputCsv, needConfirm):
 
     print('Finished recording')
 
-    # Save the recorded data as a WAV file
-    wf = wave.open(filename, 'wb')
-    wf.setnchannels(channels)
-    wf.setsampwidth(p.get_sample_size(sample_format))
-    wf.setframerate(fs)
-    wf.writeframes(b''.join(frames))
-    wf.close()
-
     saveWav = False
-    if needConfirm:
+    if needconfirm:
         inp = "p"
         while inp == "p":
-            inp = input("s - save, p - playback, r - delete and repeat record, else - delete: ")
+            inp = input("s - save, p - playback, r - dont save and repeat record, b - break record and exit script, else - skip record: ")
             if inp == "s":
                 saveWav = True
             elif inp == "r":
-                os.remove(filename)
-                record(recLength, delay, text, outputCsv, needConfirm)
+                record(reclen=recLength,
+                       delay=delay,
+                       text=text,
+                       outputcsv=outputcsv,
+                       needconfirm=needconfirm,
+                       singlesentence=singlesentence)
             elif inp == "p":
                 stream = p.open(format=sample_format,
                                 channels=channels,
@@ -97,17 +101,25 @@ def record(recLen, delay, text, outputCsv, needConfirm):
                     stream.write(fr)
                 stream.stop_stream()
                 stream.close()
-            else:
-                os.remove(filename)
-                print(filename+" removed")
+            elif inp == "b":
+                p.terminate()
+                sys.exit()
 
-    if (needConfirm and saveWav) or not needConfirm:
-        with open(outputCsv, "a") as out:
+    if (needconfirm and saveWav) or not needconfirm:
+        # Save the recorded data as a WAV file
+        wf = wave.open(filename, 'wb')
+        wf.setnchannels(channels)
+        wf.setsampwidth(p.get_sample_size(sample_format))
+        wf.setframerate(fs)
+        wf.writeframes(b''.join(frames))
+        wf.close()
+
+        with open(outputcsv, "a") as out:
             out.write(pathPrefix+filename+","+str(os.path.getsize(filename))+","+text+"\n")
         if not fileContainText(vocabulary, text):
             with open(vocabulary, "a") as f:
                 f.write(text+"\n")
-        print(filename+" written to "+outputCsv)
+        print(filename+" written to "+outputcsv)
 
 def main():
     argparser = argparse.ArgumentParser()
@@ -119,6 +131,7 @@ def main():
     argparser.add_argument('-m','--mode',help='Record mode: normal - enter text and record it; file - get text from csv file line by line (first column)',default='normal')
     argparser.add_argument('-i','--input',help='Input text file, csv')
     argparser.add_argument('-c','--confirm',help='Confirm before save record',action='store_true')
+    argparser.add_argument('-S','--single',help='single sentence mode (skip duplicate sentences)',action='store_true')
     args = argparser.parse_args()
 
     if args.stat:
@@ -128,16 +141,28 @@ def main():
         print("dev.csv - "+str(num_lines))
         num_lines = sum(1 for line in open("test.csv"))
         print("test.csv - "+str(num_lines))
+        num_lines = sum(1 for line in open("vocabulary.txt"))
+        print("vocabulary.txt - "+str(num_lines))
         sys.exit()
 
     if args.mode == 'normal':
-        record(args.len, args.delay, args.text.lower(), args.output, args.confirm)
+        record(reclen=args.len,
+               delay=args.delay,
+               text=args.text.lower(),
+               outputcsv=args.output,
+               needconfirm=args.confirm,
+               singlesentence=args.single)
     elif args.mode == 'file':
         if args.input is None:
             raise ValueError('You need specify input file for this mode!')
         with open(args.input, "r") as f:
             for line in f:
-                record(args.len, args.delay, line.strip(), args.output, True)
+                record(reclen=args.len,
+                       delay=args.delay,
+                       text=line.strip(),
+                       outputcsv=args.output,
+                       needconfirm=True,
+                       singlesentence=args.single)
 
     p.terminate()
     
