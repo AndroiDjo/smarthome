@@ -36,6 +36,17 @@ def getNextWavName():
                 maxnum = filenum
     return "rec."+str(maxnum + 1)+".wav"
 
+def playwav(frames):
+    stream = p.open(format=sample_format,
+                    channels=channels,
+                    rate=fs,
+                    frames_per_buffer=chunk,
+                    output=True)
+    for fr in frames:
+        stream.write(fr)
+    stream.stop_stream()
+    stream.close()
+
 def record(reclen, delay, text, outputcsv, needconfirm, singlesentence):
     textLen = len(text)
 
@@ -71,6 +82,7 @@ def record(reclen, delay, text, outputcsv, needconfirm, singlesentence):
         data = stream.read(chunk)
         frames.append(data)
 
+    subframes = frames
     # Stop and close the stream 
     stream.stop_stream()
     stream.close()
@@ -79,11 +91,14 @@ def record(reclen, delay, text, outputcsv, needconfirm, singlesentence):
 
     saveWav = False
     if needconfirm:
-        inp = "p"
-        while inp == "p":
-            inp = input("s - save, p - playback, r - dont save and repeat record, b - break record and exit script, else - skip record: ")
+        dialogue = True
+        while dialogue:
+            inp = input("s - save, p - playback, r - dont save and repeat record, "+
+                        "b - break record and exit script, cn:n - cut wav (first digit - from begin, second - from end), "+
+                        "else - skip record: ")
             if inp == "s":
                 saveWav = True
+                dialogue = False
             elif inp == "r":
                 record(reclen=recLength,
                        delay=delay,
@@ -91,19 +106,35 @@ def record(reclen, delay, text, outputcsv, needconfirm, singlesentence):
                        outputcsv=outputcsv,
                        needconfirm=needconfirm,
                        singlesentence=singlesentence)
+                dialogue = False
             elif inp == "p":
-                stream = p.open(format=sample_format,
-                                channels=channels,
-                                rate=fs,
-                                frames_per_buffer=chunk,
-                                output=True)
-                for fr in frames:
-                    stream.write(fr)
-                stream.stop_stream()
-                stream.close()
+                playwav(subframes)
             elif inp == "b":
                 p.terminate()
                 sys.exit()
+            elif inp.startswith("c"):
+                try:
+                    frlen = len(frames)
+                    cutarr = inp[1:].split(":")
+                    if cutarr[0] == "":
+                        slfrom = None
+                    else:
+                        slfrom = int(cutarr[0])
+
+                    if cutarr[1] == "":
+                        slto = None
+                    else:
+                        slto = int(cutarr[1])
+
+                    subframes = frames[slfrom:slto]
+                    if len(subframes) > 1:
+                        playwav(subframes)
+                    else:
+                        print("you must cut less than length of wav: "+str(frlen))
+                except ValueError:
+                    print("wrong number format! example: c10:5")
+            else:
+                dialogue = False
 
     if (needconfirm and saveWav) or not needconfirm:
         # Save the recorded data as a WAV file
@@ -111,7 +142,7 @@ def record(reclen, delay, text, outputcsv, needconfirm, singlesentence):
         wf.setnchannels(channels)
         wf.setsampwidth(p.get_sample_size(sample_format))
         wf.setframerate(fs)
-        wf.writeframes(b''.join(frames))
+        wf.writeframes(b''.join(subframes))
         wf.close()
 
         with open(outputcsv, "a") as out:
