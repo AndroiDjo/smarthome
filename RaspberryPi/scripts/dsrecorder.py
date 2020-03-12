@@ -13,7 +13,7 @@ channels = 1
 fs = 16000  # Record at 44100 samples per second
 pathPrefix = "/media/djo/DS/work/clips/"
 vocabulary = "vocabulary.txt"
-secpersym = 0.13
+secpersym = 0.1
 
 def fileContainText(filename, text):
     existText = False
@@ -48,6 +48,7 @@ def playwav(frames):
     stream.close()
 
 def record(reclen, delay, text, outputcsv, needconfirm, singlesentence):
+    text = text.lower().strip()
     textLen = len(text)
 
     if textLen == 0:
@@ -84,7 +85,10 @@ def record(reclen, delay, text, outputcsv, needconfirm, singlesentence):
         data = stream.read(chunk)
         frames.append(data)
 
-    subframes = frames[5:] #default cut
+    if recLength > 3:
+        subframes = frames[5:] #default cut
+    else:
+        subframes = frames
     # Stop and close the stream 
     stream.stop_stream()
     stream.close()
@@ -181,7 +185,7 @@ def main():
     if args.mode == 'normal':
         record(reclen=args.len,
                delay=args.delay,
-               text=args.text.lower(),
+               text=args.text,
                outputcsv=args.output,
                needconfirm=args.confirm,
                singlesentence=args.single)
@@ -192,7 +196,7 @@ def main():
             for line in f:
                 record(reclen=args.len,
                        delay=args.delay,
-                       text=line.strip(),
+                       text=line,
                        outputcsv=args.output,
                        needconfirm=True,
                        singlesentence=args.single)
