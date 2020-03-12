@@ -65,6 +65,8 @@ def record(reclen, delay, text, outputcsv, needconfirm, singlesentence):
         recLength = 2
 
     print (text)
+    if needconfirm:
+        dummy = input("Ready?")
     if delay > 0:
         print("Sleep "+str(delay)+" sec")
         time.sleep(delay)
@@ -82,7 +84,7 @@ def record(reclen, delay, text, outputcsv, needconfirm, singlesentence):
         data = stream.read(chunk)
         frames.append(data)
 
-    subframes = frames
+    subframes = frames[5:] #default cut
     # Stop and close the stream 
     stream.stop_stream()
     stream.close()
