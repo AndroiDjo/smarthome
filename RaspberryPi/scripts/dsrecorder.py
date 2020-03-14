@@ -4,6 +4,7 @@ import os, sys
 import getopt
 import time
 import argparse
+from threading import Thread
 
 __location__ = os.path.realpath(os.path.join(os.getcwd(), os.path.dirname(__file__)))
 p = pyaudio.PyAudio()
@@ -14,6 +15,9 @@ fs = 16000  # Record at 44100 samples per second
 pathPrefix = "/media/djo/DS/work/clips/"
 vocabulary = "vocabulary.txt"
 secpersym = 0.1
+frames = []  # Initialize array to store frames
+break_rec = False
+stream = None
 
 def fileContainText(filename, text):
     existText = False
@@ -47,7 +51,22 @@ def playwav(frames):
     stream.stop_stream()
     stream.close()
 
-def record(reclen, delay, text, outputcsv, needconfirm, singlesentence):
+def thread_rec(chunk, rng):
+    global frames
+    global break_rec
+    global stream
+    break_rec = False
+    for i in range(0, rng):
+        data = stream.read(chunk)
+        frames.append(data)
+        if break_rec:
+            break
+
+def record(reclen, delay, text, outputcsv, needconfirm, singlesentence, manualcut):
+    global frames
+    global break_rec
+    global stream
+    frames = []
     text = text.lower().strip()
     textLen = len(text)
 
@@ -66,30 +85,33 @@ def record(reclen, delay, text, outputcsv, needconfirm, singlesentence):
         recLength = 2
 
     print (text)
-    if needconfirm:
+    if manualcut:
         dummy = input("Ready?")
     if delay > 0:
         print("Sleep "+str(delay)+" sec")
         time.sleep(delay)
 
     filename = getNextWavName()
-    print("Recording "+str(recLength)+" sec...")
     stream = p.open(format=sample_format,
                     channels=channels,
                     rate=fs,
                     frames_per_buffer=chunk,
                     input=True)
-    frames = []  # Initialize array to store frames
-    # Store data in chunks for 3 seconds
-    for i in range(0, int(fs / chunk * recLength)):
-        data = stream.read(chunk)
-        frames.append(data)
-
-    if recLength > 3:
-        subframes = frames[5:] #default cut
+    
+    if manualcut:
+        thread = Thread(target=thread_rec, args=(chunk, int(fs / chunk * 10),))
+        thread.start()
+        dummy = input("Press Enter to stop record")
+        break_rec = True
+        thread.join()
     else:
-        subframes = frames
-    # Stop and close the stream 
+        print("Recording "+str(recLength)+" sec...")
+        for i in range(0, int(fs / chunk * recLength)):
+            data = stream.read(chunk)
+            frames.append(data)
+
+    subframes = frames[3:] #default cut
+    
     stream.stop_stream()
     stream.close()
 
@@ -111,7 +133,8 @@ def record(reclen, delay, text, outputcsv, needconfirm, singlesentence):
                        text=text,
                        outputcsv=outputcsv,
                        needconfirm=needconfirm,
-                       singlesentence=singlesentence)
+                       singlesentence=singlesentence,
+                       manualcut=manualcut)
                 dialogue = False
             elif inp == "p":
                 playwav(subframes)
@@ -169,6 +192,7 @@ def main():
     argparser.add_argument('-i','--input',help='Input text file, csv')
     argparser.add_argument('-c','--confirm',help='Confirm before save record',action='store_true')
     argparser.add_argument('-S','--single',help='single sentence mode (skip duplicate sentences)',action='store_true')
+    argparser.add_argument('-M','--manualcut',help='Manual cut record',action='store_true')
     args = argparser.parse_args()
 
     if args.stat:
@@ -188,7 +212,8 @@ def main():
                text=args.text,
                outputcsv=args.output,
                needconfirm=args.confirm,
-               singlesentence=args.single)
+               singlesentence=args.single,
+               manualcut=args.manualcut)
     elif args.mode == 'file':
         if args.input is None:
             raise ValueError('You need specify input file for this mode!')
@@ -199,7 +224,8 @@ def main():
                        text=line,
                        outputcsv=args.output,
                        needconfirm=True,
-                       singlesentence=args.single)
+                       singlesentence=args.single,
+                       manualcut=args.manualcut)
 
     p.terminate()
     
