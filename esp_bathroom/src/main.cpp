@@ -12,8 +12,7 @@
 
 const char* privateFile = "/private.json"; // файл для хранения учетных данных
 const char* configFile = "/config.json"; // файл для хранения настроек модуля
-const uint8_t LED1_PIN = D5;
-const uint8_t LED2_PIN = D6;
+const uint8_t LED_PIN = D6;
 const uint8_t FAN_PIN = D7;
 const uint8_t HALL_PIN = D4;
 const uint8_t TEMP_PIN = D3;
@@ -113,12 +112,10 @@ void fade(int from, int to) {
   int delta = (to - from) / fadeSteps;
   while (curstep < fadeSteps) {
     curpwm += delta;
-    analogWrite(LED1_PIN, curpwm);
-    analogWrite(LED2_PIN, curpwm);
+    analogWrite(LED_PIN, curpwm);
     curstep++;
     delay(fadeInterval);
   }
-  
 }
 
 void switchLed() {
@@ -338,8 +335,7 @@ void delayLoop() {
 
 void setup() {
   Serial.begin(115200);
-  pinMode(LED1_PIN, OUTPUT);
-  pinMode(LED2_PIN, OUTPUT);
+  pinMode(LED_PIN, OUTPUT);
   pinMode(FAN_PIN, OUTPUT);
   pinMode(HALL_PIN, INPUT);
   pinMode(MOTION_ROOM_PIN, INPUT);
