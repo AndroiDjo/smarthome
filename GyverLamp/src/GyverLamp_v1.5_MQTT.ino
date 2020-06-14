@@ -117,11 +117,7 @@ byte IP_AP[] = {192, 168, 4, 100};   // статический IP точки д�
 #include "timerMinim.h"
 #include <FastLED.h>
 #include <ESP8266WiFi.h>
-#include <DNSServer.h>
-#include <ESP8266WebServer.h>
 #include <WiFiClient.h>
-#include <ESP8266mDNS.h>
-#include <ESP8266HTTPUpdateServer.h>
 #include <WiFiManager.h>
 #include <WiFiUdp.h>
 #include <EEPROM.h>
@@ -143,8 +139,6 @@ NTPClient timeClient(ntpUDP, NTP_ADDRESS, GMT * 3600, NTP_INTERVAL);
 timerMinim timeTimer(1000);
 timerMinim timeStrTimer(120);
 GButton touch(BTN_PIN, LOW_PULL, NORM_OPEN);
-ESP8266WebServer *http; // запуск слушателя 80 порта (эйкей вебсервер)
-ESP8266HTTPUpdateServer *httpUpdater;
 
 CRGBPalette16 cPalette( PartyColors_p );
 CRGB ledsbuff[NUM_LEDS];
@@ -364,10 +358,6 @@ void setup() {
     #endif
 
     WiFi.setOutputPower(20);
-
-    if (!MDNS.begin(clientId)) {
-        Serial.println("Error setting up MDNS responder!");
-    }
   
     ArduinoOTA.onStart([]() {
       Serial.println("OTA Start");
@@ -399,10 +389,6 @@ void setup() {
     
     ArduinoOTA.begin();
   }
-  
-  Udp.begin(localPort);
-  Serial.printf("UDP server on port %d\n", localPort);
-
   // EEPROM
   
   delay(50);
@@ -440,9 +426,6 @@ void setup() {
   currentMode = (int8_t)EEPROM.read(200);
 
   if (ONflag) FastLED.setBrightness(modes[currentMode].brightness);
-  
-  // отправляем настройки
-  sendSettings();
 
   timeClient.begin();
   memset(matrixValue, 0, sizeof(matrixValue));
@@ -463,9 +446,6 @@ void setup() {
     delay(500);
   }
   updTime();
-  
-  webserver();
-  MDNS.addService("http", "tcp", 80);
 
   MQTTconfig MQTTConfig = readMQTTConfig();
   
@@ -493,14 +473,10 @@ void loop() {
   infoTimer->Update();
   demoTimer->Update();
 
-  parseUDP();
   effectsTick();
   eepromTick();
   timeTick();
   buttonTick();
-
-  MDNS.update();
-  http->handleClient();
 
   if (USE_MQTT && !mqttclient.connected()) MQTTreconnect();
   if (USE_MQTT) mqttclient.loop();
