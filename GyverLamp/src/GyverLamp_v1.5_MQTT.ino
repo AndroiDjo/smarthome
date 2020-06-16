@@ -62,7 +62,7 @@
 
 // ============= НАСТРОЙКИ =============
 // -------- ВРЕМЯ -------
-#define GMT 5              // смещение (москва 3)
+#define GMT 3              // смещение (москва 3)
 #define NTP_ADDRESS  "europe.pool.ntp.org"    // сервер времени
 
 // -------- РАССВЕТ -------
@@ -145,6 +145,9 @@ CRGB ledsbuff[NUM_LEDS];
 CRGB leds[NUM_LEDS];
 
 // ----------------- ПЕРЕМЕННЫЕ ------------------
+
+int delayCounter = 0;
+int delayLimit = 5;
 
 const char AP_NameChar[] = AP_SSID;
 const char WiFiPassword[] = AP_PASS;
@@ -469,9 +472,20 @@ void setup() {
 
 }
 
+void delayLoop() {
+  delayCounter++;
+  if (delayCounter > delayLimit) {
+    delayCounter = 0;
+    yield();
+    delay(1);
+  }
+}
+
 void loop() {
   infoTimer->Update();
   demoTimer->Update();
+
+  ArduinoOTA.handle();
 
   effectsTick();
   eepromTick();
@@ -481,8 +495,7 @@ void loop() {
   if (USE_MQTT && !mqttclient.connected()) MQTTreconnect();
   if (USE_MQTT) mqttclient.loop();
 
-  ArduinoOTA.handle();
-  yield();
+  delayLoop();
 }
 
 void eeWriteInt(int pos, int val) {
