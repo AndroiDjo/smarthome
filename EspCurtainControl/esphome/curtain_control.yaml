@@ -1,0 +1,119 @@
+esphome:
+  name: curtain_bedroom
+  platform: ESP8266
+  board: nodemcuv2
+  esp8266_restore_from_flash: true
+  
+  on_boot:
+    then:
+      - output.turn_off: pin_power
+      - output.turn_off: pin_ms1
+      - output.turn_on: pin_ms2
+      - stepper.report_position:
+          id: my_stepper
+          position: !lambda 'return id(steppos);'
+      - stepper.set_target:
+          id: my_stepper
+          target: !lambda 'return id(steppos);'
+
+wifi:
+  ssid: !secret wifiap
+  password: !secret wifipass
+
+  # Enable fallback hotspot (captive portal) in case wifi connection fails
+  ap:
+    ssid: "Curtain Bedroom Fallback Hotspot"
+    password: !secret wifipass
+
+captive_portal:
+
+# Enable logging
+logger:
+
+# Enable Home Assistant API
+api:
+  password: !secret pass1
+  services:
+    - service: control_stepper
+      variables:
+        target: int
+      then:
+        - globals.set:
+            id: targetpos
+            value: !lambda 'return target;'
+
+ota:
+  password: !secret pass2
+  port: !secret otaport
+
+globals:
+  - id: steppos
+    type: int
+    restore_value: yes
+    initial_value: '0'
+  - id: targetpos
+    type: int
+    restore_value: yes
+    initial_value: '1000'
+
+stepper:
+  - platform: a4988
+    id: my_stepper
+    step_pin: D6
+    dir_pin: D5
+    max_speed: 250 steps/s
+
+    # Optional:
+    sleep_pin: D2
+    acceleration: 200
+    deceleration: 200
+
+cover:
+  - platform: template
+    name: "Curtain bedroom cover"
+    device_class: curtain
+    id: curtaincover
+    assumed_state: true
+    
+    open_action:
+      - stepper.report_position:
+          id: my_stepper
+          position: !lambda |-
+            if (id(my_stepper).current_position < 0) {
+              return 0;
+            } else {
+              return id(my_stepper).current_position;
+            }
+      - stepper.set_target:
+          id: my_stepper
+          target: !lambda 'return id(targetpos);'
+      - globals.set:
+          id: steppos
+          value: !lambda 'return id(targetpos);'
+    
+    close_action:
+      - stepper.set_target:
+          id: my_stepper
+          target: -100
+      - globals.set:
+          id: steppos
+          value: '0'
+    
+    stop_action:
+      - stepper.set_target:
+          id: my_stepper
+          target: !lambda 'return id(my_stepper).current_position;'
+      - globals.set:
+          id: steppos
+          value: !lambda 'return id(my_stepper).current_position;'
+    
+output:
+  - platform: gpio
+    pin: 5
+    id: pin_power
+  - platform: gpio
+    pin: 13
+    id: pin_ms1
+  - platform: gpio
+    pin: 15
+    id: pin_ms2
