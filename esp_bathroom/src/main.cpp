@@ -36,10 +36,14 @@ struct Ota {
 bool shouldSaveConfig = false;
 bool tempSensorCallback = false; // колбэк для публикации данных с датчика температуры
 bool power = true;
+bool lastState = power;
 bool powerlow = false;
 bool fan = false;
+bool doorIsClosed = false;
+bool manualFanMode = false;
 bool manualMode = false;
 int ledpwm = 1023;
+int lastLedpwm = ledpwm;
 int ledpwmLow = 100;
 int curpwm = 0;
 int delayCounter = 0;
@@ -118,6 +122,19 @@ void fade(int from, int to) {
   }
 }
 
+void switchState(bool newState, int newBrightness) {
+  if (lastState != newState || lastLedpwm != newBrightness) {
+    lastState = newState;
+    lastLedpwm = newBrightness;
+    StaticJsonDocument<256> doc;
+    doc["brightness"] = newBrightness;
+    doc["state"] = newState ? "ON" : "OFF";
+    char buffer[512];
+    size_t n = serializeJson(doc, buffer);
+    client.publish("light/bathroom/state", buffer, n);
+  }
+}
+
 void switchLed() {
   if (power) {
     if (powerlow) {
@@ -129,6 +146,8 @@ void switchLed() {
   {
     fade(curpwm, 0);
   }
+
+  switchState(power, ledpwm);
 }
 
 void switchFan() {
@@ -140,7 +159,7 @@ void switchFan() {
 }
 
 void checkLowLight(long deltaTime, int timeInterval) {
-  if (power && !fan && 
+  if (power && !doorIsClosed && 
      (timeInterval - deltaTime) < (timeInterval / 10) &&
      ledpwm > ledpwmLow)   {
     powerlow = true;
@@ -169,14 +188,18 @@ void checkSensors() {
 
   if (digitalRead(HALL_PIN) == LOW) {
     if (millis() - fanLastDisableTime > fanDelay) {
-      fan = true;
+      doorIsClosed = true;
       doorSensorTime = millis();
     } else {
-      fan = false;
+      doorIsClosed = false;
     }
   } else {
-    fan = false;
+    doorIsClosed = false;
     fanLastDisableTime = millis();
+  }
+
+  if (!manualFanMode) {
+    fan = doorIsClosed;
   }
 }
 
@@ -213,8 +236,16 @@ void parseRequest(const JsonDocument& doc) {
     ledpwm = doc["ledpwm"];
   }
 
+  if (doc.containsKey("brightness")) {
+    ledpwm = doc["brightness"];
+  }
+
   if (doc.containsKey("fan")) {
     fan = doc["fan"];
+  }
+
+  if (doc.containsKey("manualfanmode")) {
+    manualFanMode = doc["manualfanmode"];
   }
 
   if (doc.containsKey("manualmode")) {
@@ -236,6 +267,16 @@ void parseRequest(const JsonDocument& doc) {
   if (doc.containsKey("power")) {
     power = doc["power"];
   }
+
+  if (doc.containsKey("state")) {
+    power = (doc["state"] == "ON");
+    if (power) {
+      roomSensorTime = millis();
+    } else {
+      roomSensorTime = millis() - longInterval;
+    }
+  }
+
 }
 
 void saveJsonParams(const JsonObject& json) {
@@ -315,6 +356,7 @@ void reconnect() {
       client.subscribe("all/light");
       client.subscribe("light/bathroom");
       client.subscribe("sensor/req");
+      client.subscribe("fan/bathroom");
     } else {
       Serial.print("failed, rc=");
       Serial.print(client.state());
