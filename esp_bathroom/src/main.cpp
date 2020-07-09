@@ -41,6 +41,9 @@ bool powerlow = false;
 bool fan = false;
 bool doorIsClosed = false;
 bool manualFanMode = false;
+bool lastManualFanMode = manualFanMode;
+bool manualFanStateCallback = false;
+bool lightStateCallback = false;
 bool manualMode = false;
 int ledpwm = 1023;
 int lastLedpwm = ledpwm;
@@ -122,17 +125,14 @@ void fade(int from, int to) {
   }
 }
 
-void switchState(bool newState, int newBrightness) {
-  if (lastState != newState || lastLedpwm != newBrightness) {
-    lastState = newState;
-    lastLedpwm = newBrightness;
-    StaticJsonDocument<256> doc;
-    doc["brightness"] = newBrightness;
-    doc["state"] = newState ? "ON" : "OFF";
-    char buffer[512];
-    size_t n = serializeJson(doc, buffer);
-    client.publish("light/bathroom/state", buffer, n);
-  }
+void switchState() {
+  lightStateCallback = false;
+  StaticJsonDocument<256> doc;
+  doc["brightness"] = ledpwm;
+  doc["state"] = power ? "ON" : "OFF";
+  char buffer[512];
+  size_t n = serializeJson(doc, buffer);
+  client.publish("light/bathroom/state", buffer, n);
 }
 
 void switchLed() {
@@ -147,7 +147,20 @@ void switchLed() {
     fade(curpwm, 0);
   }
 
-  switchState(power, ledpwm);
+  if (lastState != power || lastLedpwm != ledpwm) {
+    lastState = power;
+    lastLedpwm = ledpwm;
+    lightStateCallback = true;
+  }
+}
+
+void switchManualFanModeState() {
+  manualFanStateCallback = false;
+  StaticJsonDocument<256> doc;
+  doc["state"] = manualFanMode ? "OFF" : "ON";
+  char buffer[512];
+  size_t n = serializeJson(doc, buffer);
+  client.publish("fan/bathroom/state", buffer, n);
 }
 
 void switchFan() {
@@ -155,6 +168,11 @@ void switchFan() {
     digitalWrite(FAN_PIN, 1);
   } else {
     digitalWrite(FAN_PIN, 0);
+  }
+
+  if (lastManualFanMode != manualFanMode) {
+    lastManualFanMode = manualFanMode;
+    manualFanStateCallback = true;
   }
 }
 
@@ -207,26 +225,23 @@ void getTemp() {
   tempSensorCallback = false;
   StaticJsonDocument<256> doc;
   sensors_event_t event;
-  const char* clientid = "bathroomtemp";
-  doc[clientid]["kind"] = "temperature";
-  doc[clientid]["location"] = "bathroom";
   dht.temperature().getEvent(&event);
   if (isnan(event.temperature)) {
     Serial.println(F("Error reading temperature!"));
   }
   else {
-    doc[clientid]["temperature"] = event.temperature;
+    doc["temperature"] = event.temperature;
   }
   dht.humidity().getEvent(&event);
   if (isnan(event.relative_humidity)) {
     Serial.println(F("Error reading humidity!"));
   }
   else {
-    doc[clientid]["humidity"] = event.relative_humidity;
+    doc["humidity"] = event.relative_humidity;
   }
   char buffer[512];
   size_t n = serializeJson(doc, buffer);
-  client.publish("sensor/resp", buffer, n);
+  client.publish("sensor/bathroom/temp", buffer, n);
   delay(1000);
 }
 
@@ -234,10 +249,12 @@ void getTemp() {
 void parseRequest(const JsonDocument& doc) {
   if (doc.containsKey("ledpwm")) {
     ledpwm = doc["ledpwm"];
+    lightStateCallback = true;
   }
 
   if (doc.containsKey("brightness")) {
     ledpwm = doc["brightness"];
+    lightStateCallback = true;
   }
 
   if (doc.containsKey("fan")) {
@@ -246,6 +263,7 @@ void parseRequest(const JsonDocument& doc) {
 
   if (doc.containsKey("manualfanmode")) {
     manualFanMode = doc["manualfanmode"];
+    manualFanStateCallback = true;
   }
 
   if (doc.containsKey("manualmode")) {
@@ -266,6 +284,7 @@ void parseRequest(const JsonDocument& doc) {
 
   if (doc.containsKey("power")) {
     power = doc["power"];
+    lightStateCallback = true;
   }
 
   if (doc.containsKey("state")) {
@@ -275,6 +294,7 @@ void parseRequest(const JsonDocument& doc) {
     } else {
       roomSensorTime = millis() - longInterval;
     }
+    lightStateCallback = true;
   }
 
 }
@@ -508,6 +528,8 @@ void loop() {
     if (tempSensorCallback) getTemp();
     checkSensors();
     switchLed();
+    if (lightStateCallback) switchState();
     switchFan();
+    if (manualFanStateCallback) switchManualFanModeState();
     delayLoop();
 }
