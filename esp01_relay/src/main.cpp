@@ -25,6 +25,7 @@ bool power = true;
 WiFiClient espClient;
 PubSubClient client(espClient);
 Mqtt mqtt;
+WiFiManager wifiManager;
 
 void saveConfigCallback () {
   shouldSaveConfig = true;
@@ -143,7 +144,6 @@ void setup() {
   }
   loadSettings();
 
-  WiFiManager wifiManager;
   //wifiManager.resetSettings();
   WiFiManagerParameter custom_mqtt_title("<br>MQTT configuration:");
   WiFiManagerParameter custom_mqtt_server("server", "mqtt server", "", 20);
