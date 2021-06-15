@@ -1,5 +1,5 @@
 #include <Arduino.h>
-#include "FS.h"
+#include <LittleFS.h>
 #include <WiFiManager.h>
 #include <ESP8266WiFi.h>
 #include <ArduinoJson.h>
@@ -9,6 +9,9 @@ const int jsonSize = 512; // размер буфера для парсинга j
 bool power = true; // переменная отвечает за отключение/включение светильника
 bool clapSensor = true; // переключение реле по хлопку
 bool saveSettingsCallback = false; // колбэк для сохранения настроек
+bool lightStateCallback = false;
+bool clapStateCallback = false;
+bool shouldSaveConfig = false;
 const char* clientName = "esp01_light_hall"; // название MQTT клиента
 int relayPin = 0;
 
@@ -26,8 +29,24 @@ Mqtt mqtt;
 const char* privateFile = "/private.json"; // файл для хранения учетных данных
 const char* configFile = "/config.json"; // файл для хранения настроек модуля
 
+void savePrivateParams() {
+   StaticJsonDocument<256> doc;
+   doc["mqtt_server"] = mqtt.host;
+   doc["mqtt_login"] = mqtt.login;
+   doc["mqtt_pass"] = mqtt.pass;
+   doc["mqtt_port"] = mqtt.port;
+   File destFile = LittleFS.open(privateFile, "w");
+   bool srlzbool = (serializeJson(doc, destFile) == 0);
+   if (srlzbool) {
+    Serial.println("Failed to write private settings");
+   } else {
+     Serial.println("Private settings saved succesfully");
+   }
+   destFile.close();
+}
+
 void initPrivate() {
-  File file = SPIFFS.open(privateFile, "r");
+  File file = LittleFS.open(privateFile, "r");
   StaticJsonDocument<256> doc;
   DeserializationError error = deserializeJson(doc, file);
   if (error) {
@@ -47,32 +66,47 @@ void setPower(bool pwr) {
   } else {
     digitalWrite(relayPin, HIGH); // реле выключено
   }
+  lightStateCallback = true;
   saveSettingsCallback = true;
 }
 
-void parseRequest(const JsonDocument& doc) {
-  if (doc.containsKey("power")) {
-    setPower(doc["power"]);
-  }
+void switchState() {
+  lightStateCallback = false;
+  StaticJsonDocument<256> doc;
+  doc["state"] = power ? "ON" : "OFF";
+  char buffer[512];
+  size_t n = serializeJson(doc, buffer);
+  client.publish("light/hall/state", buffer, n);
+}
 
+void parseRequest(const JsonDocument& doc) {
   if (doc.containsKey("clap")) {
     saveSettingsCallback = true;
     clapSensor = doc["clap"];
   }
 
-  if (doc.containsKey("hallclap") && clapSensor) {
-    setPower(!power);
+  if (doc.containsKey("state")) {
+    bool powerState = (doc["state"] == "ON");
+    setPower(powerState);
   }
 
   // показания датчиков пробросим на сервер
-  if (doc.containsKey("hallclap") || doc.containsKey("halltemp")) {
+  if (doc.containsKey("temperature") && doc.containsKey("humidity")) {
     char buffer[jsonSize];
     size_t n = serializeJson(doc, buffer);
-    client.publish("sensor/resp", buffer, n);
+    client.publish("sensor/hall/temp", buffer, n);
+  }
+
+  if (doc.containsKey("clapdetected")) {
+    char buffer[jsonSize];
+    size_t n = serializeJson(doc, buffer);
+    client.publish("sensor/hall/clap", buffer, n);
+
+    if (clapSensor) setPower(!power);
   }
 
   // проброс команд на arduino
-  if (doc.containsKey("gettemp") || doc.containsKey("getall") || doc.containsKey("split")) {
+  if (doc.containsKey("gettemp") || doc.containsKey("getall")) {
     serializeJson(doc, Serial);
   }
 }
@@ -87,22 +121,23 @@ void serialLoop() {
   }
 }
 
-// сохранение параметров в формате json в SPIFFS память
+// сохранение параметров в формате json в LittleFS память
 void saveSettings() {
    saveSettingsCallback = false;
    StaticJsonDocument<256> doc;
    doc["power"] = power;
+   doc["state"] = power ? "ON" : "OFF";
    doc["clap"] = clapSensor;
-   File destFile = SPIFFS.open(configFile, "w");
+   File destFile = LittleFS.open(configFile, "w");
    if (serializeJson(doc, destFile) == 0) {
     destFile.close();
    }
    destFile.close();
 }
 
-// загрузка json параметров из SPIFFS
+// загрузка json параметров из LittleFS
 void loadSettings() {
-   File file = SPIFFS.open(configFile, "r");
+   File file = LittleFS.open(configFile, "r");
    StaticJsonDocument<256> doc;
    if (file) {
      DeserializationError error = deserializeJson(doc, file);
@@ -139,27 +174,56 @@ void reconnect() {
   }
 }
 
+void saveConfigCallback () {
+  Serial.println("should save config");
+  shouldSaveConfig = true;
+}
+
 void setup() {
   Serial.begin(115200);
   pinMode(relayPin,OUTPUT);
   delay(2000);
 
-  if (!SPIFFS.begin()) {
+  if (!LittleFS.begin()) {
     return;
   }
   loadSettings();
 
   WiFiManager wifiManager;
   //wifiManager.resetSettings();
+  WiFiManagerParameter custom_mqtt_title("<br>MQTT configuration:");
+  WiFiManagerParameter custom_mqtt_server("server", "mqtt server", "", 20);
+  WiFiManagerParameter custom_mqtt_username("user", "mqtt user", "", 20);
+  WiFiManagerParameter custom_mqtt_password("password", "mqtt_password", "", 20);
+  WiFiManagerParameter custom_mqtt_port("port", "mqtt port", "", 10);
+
+  wifiManager.addParameter(&custom_mqtt_title);
+  wifiManager.addParameter(&custom_mqtt_server);
+  wifiManager.addParameter(&custom_mqtt_username);
+  wifiManager.addParameter(&custom_mqtt_password);
+  wifiManager.addParameter(&custom_mqtt_port);
+
+  wifiManager.setSaveConfigCallback(saveConfigCallback);
   // Подключение к роутеру. Если не удалось подключиться - перезагружаемся.
-  wifiManager.setConfigPortalTimeout(10);
-  if (!wifiManager.autoConnect("AP")) {
+  wifiManager.setConfigPortalTimeout(60);
+  if (!wifiManager.autoConnect()) {
+    Serial.println("failed to connect and hit timeout");
     delay(3000);
     ESP.restart();
     delay(5000);
   }
 
-  initPrivate();
+  if (shouldSaveConfig) {
+    strcpy(mqtt.host, custom_mqtt_server.getValue());
+    strcpy(mqtt.login, custom_mqtt_username.getValue());
+    strcpy(mqtt.pass, custom_mqtt_password.getValue());
+    mqtt.port = String(custom_mqtt_port.getValue()).toInt();
+
+    savePrivateParams();
+    delay(100);
+  } else {
+    initPrivate();
+  }
 
   // инициализация MQTT брокера
   client.setServer(mqtt.host, mqtt.port);
@@ -176,6 +240,7 @@ void loop() {
   serialLoop();
   if (saveSettingsCallback)
     saveSettings();
+  if (lightStateCallback) switchState();
   yield();
   delay(1);
 }

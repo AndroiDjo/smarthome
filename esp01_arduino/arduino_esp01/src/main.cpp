@@ -3,7 +3,6 @@
 #include <Adafruit_Sensor.h>
 #include <DHT.h>
 #include <DHT_U.h>
-#include <IRremote.h>
 
 bool tempSensorCallback = false; // колбэк для публикации данных с датчика температуры
 #define DHTPIN 12     // Digital pin connected to the DHT sensor 
@@ -13,63 +12,26 @@ int soundSensor = 11;
 int clap = 0;
 long detection_range_start = 0;
 long detection_range = 0;
-IRsend irsend;
-uint16_t* cmdraw = NULL;
-int rawSize = 0;
-int rawIndex = 0;
-long splitTimer = 0;
 
 void getTemp() {
   tempSensorCallback = false;
   StaticJsonDocument<256> doc;
   sensors_event_t event;
-  const char* clientid = "halltemp";
-  doc[clientid]["kind"] = "temperature";
-  doc[clientid]["location"] = "hall";
   dht.temperature().getEvent(&event);
   if (!isnan(event.temperature)) {
-    doc[clientid]["temperature"] = event.temperature;
+    doc["temperature"] = event.temperature;
   }
   dht.humidity().getEvent(&event);
   if (!isnan(event.relative_humidity)) {
-    doc[clientid]["humidity"] = event.relative_humidity;
+    doc["humidity"] = event.relative_humidity;
   }
   serializeJson(doc, Serial);
   delay(1000);
 }
 
-void splitCommand(const JsonDocument& doc) {
-  if (doc.containsKey("rawsize")) {
-    splitTimer = millis();
-    rawSize = doc["rawsize"];
-    rawIndex = 0;
-    if (cmdraw) {
-      delete [] cmdraw;
-      cmdraw = NULL;
-    }
-    cmdraw = new uint16_t[rawSize];
-  }
-  if (cmdraw) {
-    int arraySize = doc["split"].size();
-    for (int i = 0; i< arraySize; i++) {
-      cmdraw[rawIndex] = doc["split"][i];
-      rawIndex++;
-    }
-    if (doc.containsKey("rawend") || millis() - splitTimer > 1000) {
-      irsend.sendRaw(cmdraw, rawSize, 38);
-      delete [] cmdraw;
-      cmdraw = NULL;
-    }
-  }
-}
-
 void parseRequest(const JsonDocument& doc) {
   if (doc.containsKey("gettemp") || doc.containsKey("getall")) {
     tempSensorCallback = true;
-  }
-
-  if (doc.containsKey("split")) {
-    splitCommand(doc);
   }
 }
 
@@ -103,9 +65,7 @@ void clapLoop() {
     if (clap == 2)
     {
       StaticJsonDocument<256> doc;
-      const char* clientid = "hallclap";
-      doc[clientid]["kind"] = "sound";
-      doc[clientid]["location"] = "hall";
+      doc["clapdetected"] = true;
       serializeJson(doc, Serial);
     }
     clap = 0;
