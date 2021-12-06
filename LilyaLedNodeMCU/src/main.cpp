@@ -1657,51 +1657,6 @@ void loopLED() {
   }
 }
 
-// void btnISR() {
-//   if (millis() - btnTimer > 150) {
-//     btnTimer = millis();  // защита от дребезга
-//     if (++modeCounter >= num_modes) modeCounter = 0;
-//     ledMode = fav_modes[modeCounter];    // получаем новый номер следующего режима
-//     change_mode(ledMode);               // меняем режим через change_mode (там для каждого режима стоят цвета и задержки)    
-//     changeFlag = true;
-//   }
-// }
-
-void buttonTick() {
-
-  if (!_BTN_CONNECTED) return;
-
-  // Необходимое время для калибровки сенсорной кнопки при плотном прилегании к стеклу
-  //if (millis() < 10000) return;
-
-  touch.tick();
-  if (touch.isSingle()) {
-    Serial.println("touch.isSingle");
-  }
-
-  if (touch.isDouble()) {
-    Serial.println("touch.isDouble");
-  }
-
-if (touch.isTriple()) {
-    Serial.println("touch.isTriple");
-  }
-
- // вывод IP на лампу
-  if (touch.hasClicks()) {
-      Serial.println("touch.hasClicks");
-      Serial.println(touch.getClicks());
-  }
-
-  if (touch.isHolded()) {
-    Serial.println("touch.isHolded");
-  }
-  
-  if (touch.isStep()) {
-  
-  }
-}
-
 void change_mode(int newmode) {
   thissat = 255;
   switch (newmode) {
@@ -1762,19 +1717,52 @@ void change_mode(int newmode) {
   ledMode = newmode;
 }
 
+void setModeLED(byte m) {
+  ledMode = m;   
+  change_mode(ledMode);
+  changeFlag = true;
+}
+
+void nextModeLED() {
+  if (++modeCounter >= num_modes) modeCounter = 0;
+  setModeLED(fav_modes[modeCounter]);
+}
+
+void prevModeLED() {
+  if (--modeCounter < 0) modeCounter = num_modes-1;
+  setModeLED(fav_modes[modeCounter]);
+}
+
+void buttonTick() {
+  if (!_BTN_CONNECTED) return;
+
+  touch.tick();
+  if (touch.isSingle()) {
+    nextModeLED();
+  }
+
+  if (touch.isDouble()) {
+    prevModeLED();
+  }
+
+  if (touch.isHolded()) {
+    Serial.println("touch.isHolded");
+  }
+}
+
 void setup() {
   Serial.begin(115200);
-  // FastLED.addLeds<WS2811, LED_PIN, GRB>(leds, NUM_LEDS).setCorrection( TypicalLEDStrip );
-  // FastLED.setBrightness(50);
 
   if (!LittleFS.begin()) {
     return;
   }
   Serial.println("littleFS initialized");
+
   loadSettings();
   Serial.println("settngs loaded");
   
   initLED();
+  Serial.println("initLED complete");
 
   WiFiManager wifiManager;
   //wifiManager.resetSettings();
@@ -1875,12 +1863,4 @@ void loop() {
   buttonTick();
   loopLED();
   delayLoop();
-
-  // for (int i = 0; i < NUM_LEDS; i++ ) {         // от 0 до первой трети
-  //   leds[i] = CHSV(counter + i * 2, 255, 255);  // HSV. Увеличивать HUE (цвет)
-  //   // умножение i уменьшает шаг радуги
-  // }
-  // counter++;        // counter меняется от 0 до 255 (тип данных byte)
-  // FastLED.show();
-  // delay(20);         // скорость движения радуги
 }
