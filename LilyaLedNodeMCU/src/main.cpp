@@ -28,7 +28,7 @@ int delayLimit = 20;
 
 #define LED_COUNT 19          // число светодиодов в кольце/ленте
 #define LED_DT D1             // пин, куда подключен DIN ленты
-#define BTN_PIN D2
+#define BTN_PIN D5
 
 GButton touch(BTN_PIN, LOW_PULL, NORM_OPEN);
 
@@ -149,6 +149,7 @@ void publishState() {
   lightStateCallback = false;
   StaticJsonDocument<512> doc;
   doc["state"] = power ? "ON" : "OFF";
+  doc["mode"] = ledMode;
   char buffer[512];
   size_t n = serializeJson(doc, buffer);
   client.publish("rgb/childroom/state", buffer, n);
@@ -1715,11 +1716,11 @@ void change_mode(int newmode) {
   bouncedirection = 0;
   one_color_all(0, 0, 0);
   ledMode = newmode;
+  lightStateCallback = true;
 }
 
-void setModeLED(byte m) {
-  ledMode = m;   
-  change_mode(ledMode);
+void setModeLED(byte m) {  
+  change_mode(m);
   changeFlag = true;
 }
 
